@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { checkStatus } from './api';
 import Conexao from './components/Conexao';
 import Dashboard from './components/Dashboard';
+import Box from "@cloudscape-design/components/box";
+import Spinner from "@cloudscape-design/components/spinner";
 
 function App() {
   const [conectado, setConectado] = useState<boolean | null>(null);
@@ -13,7 +15,16 @@ function App() {
   }, []);
 
   if (conectado === null) {
-    return <div style={{ textAlign: 'center', marginTop: 80 }}>Verificando conexao...</div>;
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+        <Box textAlign="center">
+          <Spinner size="large" />
+          <Box variant="p" margin={{ top: 's' }} color="text-status-inactive">
+            Verificando conex\u00e3o...
+          </Box>
+        </Box>
+      </div>
+    );
   }
 
   if (!conectado) {

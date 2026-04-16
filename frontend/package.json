@@ -13,6 +13,8 @@
     "vite": "^8.0.4"
   },
   "dependencies": {
+    "@cloudscape-design/components": "^3.0.1275",
+    "@cloudscape-design/global-styles": "^1.0.57",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "react": "^19.2.5",
