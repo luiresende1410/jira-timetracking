@@ -27,6 +27,7 @@ import DatePicker from "@cloudscape-design/components/date-picker";
 import Alert from "@cloudscape-design/components/alert";
 import StatusIndicator from "@cloudscape-design/components/status-indicator";
 import FormField from "@cloudscape-design/components/form-field";
+import Capacity from './Capacity';
 import Spinner from "@cloudscape-design/components/spinner";
 
 interface DashboardProps { onDesconectado: () => void; }
@@ -521,7 +522,7 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
 
             {!loading && (<>
               <div style={{ display: 'flex', gap: 0, borderBottom: '2px solid #e9ebed', marginBottom: 16 }}>
-                {(['resumo','colaboradores','projetos','clientes'] as const).map(t => (
+                {(['resumo','colaboradores','projetos','clientes','capacity'] as const).map(t => (
                   <button key={t} onClick={() => setTab(t)} style={{
                     padding: '10px 20px', background: 'none', border: 'none',
                     color: tab === t ? '#0073bb' : '#545b64',
@@ -534,6 +535,7 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
               {tab === 'colaboradores' && renderColaboradores()}
               {tab === 'projetos' && renderProjetos()}
               {tab === 'clientes' && renderClientes()}
+              {tab === 'capacity' && <Capacity dataInicio={dataInicio} dataFim={dataFim} />}
             </>
             )}
           </SpaceBetween>

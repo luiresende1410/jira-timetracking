@@ -49,3 +49,54 @@ export async function getRelatorioCompleto(dataInicio: string, dataFim: string) 
     API + '/relatorio/completo?' + qs({ data_inicio: dataInicio, data_fim: dataFim })
   );
 }
+
+// ===== Colaboradores e Capacity =====
+
+export interface ColaboradorConfig {
+  perfil: string;
+  time: string;
+}
+
+export interface CapacityColaborador {
+  nome: string;
+  perfil: string;
+  time: string;
+  capacity: Record<string, number>;
+  total_provisionado: number;
+}
+
+export interface CapacityResponse {
+  dias_uteis: number;
+  periodo_inicio: string;
+  periodo_fim: string;
+  perfis: Record<string, Record<string, number>>;
+  colaboradores: CapacityColaborador[];
+}
+
+export async function getColaboradores() {
+  return request<Record<string, ColaboradorConfig>>(API + '/colaboradores');
+}
+
+export async function updateColaborador(nome: string, perfil: string, time: string) {
+  return request<ColaboradorConfig>(
+    API + '/colaboradores/' + encodeURIComponent(nome),
+    { method: 'PUT', body: JSON.stringify({ perfil, time }) }
+  );
+}
+
+export async function deleteColaborador(nome: string) {
+  return request<{ status: string }>(
+    API + '/colaboradores/' + encodeURIComponent(nome),
+    { method: 'DELETE' }
+  );
+}
+
+export async function getPerfis() {
+  return request<Record<string, Record<string, number>>>(API + '/perfis');
+}
+
+export async function getCapacity(dataInicio: string, dataFim: string) {
+  return request<CapacityResponse>(
+    API + '/capacity?' + qs({ data_inicio: dataInicio, data_fim: dataFim })
+  );
+}

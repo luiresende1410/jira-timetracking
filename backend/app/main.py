@@ -1,5 +1,6 @@
 import os
 import logging
+from pydantic import BaseModel
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime, date
@@ -10,6 +11,13 @@ from .config import ConfiguracaoJira
 from .cliente_api_jira import ClienteApiJira, JiraApiError
 from .servico_worklogs import ServicoWorklogs
 from .gerador_relatorios import GeradorRelatorios
+from .servico_capacity import (
+    listar_colaboradores,
+    atualizar_colaborador,
+    remover_colaborador,
+    calcular_capacity,
+    PERFIS_CAPACITY,
+)
 from .models import (
     RelatorioColaborador,
     RelatorioProjeto,
@@ -143,6 +151,43 @@ async def relatorio_completo(
             "percentual_billable": round(billable / (billable + non_billable) * 100, 2) if (billable + non_billable) > 0 else 0,
         },
     }
+
+
+# ===== Endpoints de Colaboradores e Capacity =====
+
+class ColaboradorUpdate(BaseModel):
+    perfil: str
+    time: str
+
+
+@app.get("/api/colaboradores")
+async def get_colaboradores():
+    return listar_colaboradores()
+
+
+@app.put("/api/colaboradores/{nome}")
+async def put_colaborador(nome: str, body: ColaboradorUpdate):
+    return atualizar_colaborador(nome, body.perfil, body.time)
+
+
+@app.delete("/api/colaboradores/{nome}")
+async def delete_colaborador(nome: str):
+    if remover_colaborador(nome):
+        return {"status": "removido"}
+    raise HTTPException(status_code=404, detail="Colaborador nao encontrado")
+
+
+@app.get("/api/perfis")
+async def get_perfis():
+    return PERFIS_CAPACITY
+
+
+@app.get("/api/capacity")
+async def get_capacity(
+    data_inicio: date = Query(...),
+    data_fim: date = Query(...),
+):
+    return calcular_capacity(data_inicio, data_fim)
 
 
 @app.on_event("shutdown")
