@@ -187,7 +187,87 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
           </ColumnLayout>
         )}
 
-        {capacityVsReal.length > 0 && (
+        {capacityVsReal.length > 0 && (() => {
+          // Agrupar por time
+          const porTime = new Map<string, { provisionado: number; realizado: number; membros: number }>();
+          for (const c of capacityVsReal) {
+            const t = c.time || 'Sem Time';
+            if (!porTime.has(t)) porTime.set(t, { provisionado: 0, realizado: 0, membros: 0 });
+            const entry = porTime.get(t)!;
+            entry.provisionado += c.horas_provisionadas;
+            entry.realizado += c.horas_reais;
+            entry.membros += 1;
+          }
+          const times = Array.from(porTime.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+          const totalProv = times.reduce((s, [, v]) => s + v.provisionado, 0);
+          const totalReal = times.reduce((s, [, v]) => s + v.realizado, 0);
+
+          return (
+            <Container header={<Header variant="h3">Capacity por Time</Header>}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ borderBottom: "2px solid #e9ebed" }}>
+                    <th style={{ textAlign: "left", padding: "10px 16px", fontSize: 13, color: "#545b64", fontWeight: 600 }}>Time</th>
+                    <th style={{ textAlign: "center", padding: "10px 12px", fontSize: 13, color: "#545b64", fontWeight: 600 }}>Membros</th>
+                    <th style={{ textAlign: "right", padding: "10px 16px", fontSize: 13, color: "#545b64", fontWeight: 600 }}>Provisionado</th>
+                    <th style={{ textAlign: "right", padding: "10px 16px", fontSize: 13, color: "#545b64", fontWeight: 600 }}>Realizado</th>
+                    <th style={{ textAlign: "right", padding: "10px 16px", fontSize: 13, color: "#545b64", fontWeight: 600 }}>Diferença</th>
+                    <th style={{ textAlign: "right", padding: "10px 16px", fontSize: 13, color: "#545b64", fontWeight: 600 }}>% Utilização</th>
+                    <th style={{ padding: "10px 12px", width: 180 }}>
+                      <div style={{ fontSize: 11, color: "#545b64", fontWeight: 600, marginBottom: 2 }}>Realizado / Provisionado</div>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {times.map(([time, v]) => {
+                    const diff = v.realizado - v.provisionado;
+                    const pct = v.provisionado > 0 ? (v.realizado / v.provisionado) * 100 : 0;
+                    const barColor = pct >= 90 ? "#037f0c" : pct >= 70 ? "#f89256" : "#d13212";
+                    const barWidth = Math.min(pct, 100);
+                    return (
+                      <tr key={time} style={{ borderBottom: "1px solid #e9ebed" }}>
+                        <td style={{ padding: "10px 16px", fontSize: 14, fontWeight: 600 }}>{time}</td>
+                        <td style={{ padding: "10px 12px", fontSize: 13, textAlign: "center", color: "#5f6b7a" }}>{v.membros}</td>
+                        <td style={{ padding: "10px 16px", fontSize: 13, textAlign: "right" }}>{v.provisionado.toFixed(1)}h</td>
+                        <td style={{ padding: "10px 16px", fontSize: 13, textAlign: "right", fontWeight: 600 }}>{v.realizado.toFixed(1)}h</td>
+                        <td style={{ padding: "10px 16px", fontSize: 13, textAlign: "right", color: diff >= 0 ? "#037f0c" : "#d13212", fontWeight: 600 }}>
+                          {diff > 0 ? "+" : ""}{diff.toFixed(1)}h
+                        </td>
+                        <td style={{ padding: "10px 16px", fontSize: 13, textAlign: "right", fontWeight: 700, color: barColor }}>
+                          {pct.toFixed(0)}%
+                        </td>
+                        <td style={{ padding: "10px 12px" }}>
+                          <div style={{ background: "#e9ebed", borderRadius: 4, height: 12, overflow: "hidden" }}>
+                            <div style={{ width: `${barWidth}%`, background: barColor, height: "100%", borderRadius: 4, transition: "width 0.3s" }} />
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  <tr style={{ borderTop: "2px solid #e9ebed", background: "#f2f3f3" }}>
+                    <td style={{ padding: "10px 16px", fontSize: 14, fontWeight: 700 }}>Total Geral</td>
+                    <td style={{ padding: "10px 12px", fontSize: 13, textAlign: "center", color: "#5f6b7a", fontWeight: 600 }}>{capacityVsReal.length}</td>
+                    <td style={{ padding: "10px 16px", fontSize: 13, textAlign: "right", fontWeight: 600 }}>{totalProv.toFixed(1)}h</td>
+                    <td style={{ padding: "10px 16px", fontSize: 13, textAlign: "right", fontWeight: 700 }}>{totalReal.toFixed(1)}h</td>
+                    <td style={{ padding: "10px 16px", fontSize: 13, textAlign: "right", fontWeight: 700, color: (totalReal - totalProv) >= 0 ? "#037f0c" : "#d13212" }}>
+                      {(totalReal - totalProv) > 0 ? "+" : ""}{(totalReal - totalProv).toFixed(1)}h
+                    </td>
+                    <td style={{ padding: "10px 16px", fontSize: 13, textAlign: "right", fontWeight: 700, color: totalProv > 0 && (totalReal/totalProv*100) >= 90 ? "#037f0c" : "#d13212" }}>
+                      {totalProv > 0 ? (totalReal / totalProv * 100).toFixed(0) : 0}%
+                    </td>
+                    <td style={{ padding: "10px 12px" }}>
+                      <div style={{ background: "#e9ebed", borderRadius: 4, height: 12, overflow: "hidden" }}>
+                        <div style={{ width: `${Math.min(totalProv > 0 ? (totalReal/totalProv*100) : 0, 100)}%`, background: totalProv > 0 && (totalReal/totalProv*100) >= 90 ? "#037f0c" : "#d13212", height: "100%", borderRadius: 4 }} />
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </Container>
+          );
+        })()}
+
+                {capacityVsReal.length > 0 && (
           <Container header={<Header variant="h3" description={`${diasUteis} dias úteis no período`}>Capacity vs Horas Reais</Header>}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
