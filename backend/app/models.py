@@ -22,6 +22,7 @@ class WorklogEnriquecido(BaseModel):
     projeto_nome: str
     issue_summary: str
     issue_key: str
+    issue_type: Optional[str] = None
     horas_decimais: float
     organizacao: Optional[str] = None
 
@@ -46,11 +47,13 @@ class Issue(BaseModel):
     summary: str
     project_id: str
     organizacao: Optional[str] = None
+    issue_type: Optional[str] = None
 
 
 class DetalheAtividade(BaseModel):
     issue_key: str
     issue_summary: str
+    issue_type: Optional[str] = None
     data_registro: date
     horas: float
     comentario: Optional[str] = None
@@ -79,10 +82,16 @@ class RelatorioColaborador(BaseModel):
     detalhes_por_cliente: list[DetalheCliente] = []
 
 
+class HorasPorTipo(BaseModel):
+    issue_type: str
+    total_horas: float
+
+
 class ResumoColaborador(BaseModel):
     nome_colaborador: str
     total_horas: float
     percentual_contribuicao: float
+    por_tipo: list[HorasPorTipo] = []
 
 
 class RelatorioProjeto(BaseModel):
@@ -91,6 +100,7 @@ class RelatorioProjeto(BaseModel):
     cliente_associado: Optional[str] = None
     total_horas: float
     colaboradores: list[ResumoColaborador]
+    horas_por_tipo: list[HorasPorTipo] = []
 
 
 class ColaboradorCliente(BaseModel):

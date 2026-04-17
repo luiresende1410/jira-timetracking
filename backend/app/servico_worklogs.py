@@ -77,6 +77,7 @@ class ServicoWorklogs:
                 projeto_nome=projeto.nome if projeto else "",
                 issue_summary=issue.summary,
                 issue_key=issue.key,
+                issue_type=issue.issue_type,
                 horas_decimais=round(w.tempo_gasto_segundos / 3600, 2),
                 organizacao=issue.organizacao,
             )

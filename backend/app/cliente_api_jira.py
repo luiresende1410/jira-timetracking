@@ -130,18 +130,20 @@ class ClienteApiJira:
             data = await self._request(
                 "GET",
                 f"/rest/api/3/issue/{issue_id}",
-                params={"fields": "summary,project,customfield_10002"},
+                params={"fields": "summary,project,customfield_10002,issuetype"},
             )
             fields = data.get("fields", {})
             # Extrair organization do customfield_10002
             orgs = fields.get("customfield_10002") or []
             org_name = orgs[0].get("name", "") if orgs else None
+            issue_type = fields.get("issuetype", {}).get("name") if fields.get("issuetype") else None
             return Issue(
                 id=str(data["id"]),
                 key=data["key"],
                 summary=fields.get("summary", ""),
                 project_id=str(fields.get("project", {}).get("id", "")),
                 organizacao=org_name,
+                issue_type=issue_type,
             )
         except JiraApiError:
             return None

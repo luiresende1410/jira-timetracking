@@ -10,6 +10,7 @@ from .models import (
     DetalheCliente,
     RelatorioProjeto,
     ResumoColaborador,
+    HorasPorTipo,
     RelatorioCliente,
     ColaboradorCliente,
     ResumoGeral,
@@ -42,6 +43,7 @@ class GeradorRelatorios:
                     DetalheAtividade(
                         issue_key=w.issue_key,
                         issue_summary=w.issue_summary,
+                        issue_type=w.issue_type,
                         data_registro=w.worklog.data_inicio.date(),
                         horas=w.horas_decimais,
                         comentario=w.worklog.comentario,
@@ -103,19 +105,33 @@ class GeradorRelatorios:
             for w in wlogs:
                 por_colab[w.nome_colaborador].append(w)
 
-            colaboradores = [
-                ResumoColaborador(
-                    nome_colaborador=nome,
-                    total_horas=round(sum(w.horas_decimais for w in cwlogs), 2),
-                    percentual_contribuicao=round(
-                        (sum(w.horas_decimais for w in cwlogs) / total_horas * 100)
-                        if total_horas
-                        else 0,
-                        2,
-                    ),
+            colaboradores = []
+            for nome, cwlogs in por_colab.items():
+                horas_colab = sum(w.horas_decimais for w in cwlogs)
+                # Breakdown por issue_type para este colaborador
+                por_tipo_colab: dict[str, float] = defaultdict(float)
+                for w in cwlogs:
+                    tipo = w.issue_type or "Sem Tipo"
+                    por_tipo_colab[tipo] += w.horas_decimais
+                colaboradores.append(
+                    ResumoColaborador(
+                        nome_colaborador=nome,
+                        total_horas=round(horas_colab, 2),
+                        percentual_contribuicao=round(
+                            (horas_colab / total_horas * 100) if total_horas else 0, 2
+                        ),
+                        por_tipo=[
+                            HorasPorTipo(issue_type=t, total_horas=round(h, 2))
+                            for t, h in sorted(por_tipo_colab.items(), key=lambda x: -x[1])
+                        ],
+                    )
                 )
-                for nome, cwlogs in por_colab.items()
-            ]
+
+            # Breakdown por issue_type para o projeto inteiro
+            por_tipo_proj: dict[str, float] = defaultdict(float)
+            for w in wlogs:
+                tipo = w.issue_type or "Sem Tipo"
+                por_tipo_proj[tipo] += w.horas_decimais
 
             resultado.append(
                 RelatorioProjeto(
@@ -123,6 +139,10 @@ class GeradorRelatorios:
                     projeto_nome=wlogs[0].projeto_nome,
                     total_horas=round(total_horas, 2),
                     colaboradores=colaboradores,
+                    horas_por_tipo=[
+                        HorasPorTipo(issue_type=t, total_horas=round(h, 2))
+                        for t, h in sorted(por_tipo_proj.items(), key=lambda x: -x[1])
+                    ],
                 )
             )
         return resultado

@@ -31,6 +31,7 @@ export interface WorklogEnriquecido {
 export interface DetalheAtividade {
   issue_key: string;
   issue_summary: string;
+  issue_type?: string;
   data_registro: string;
   horas: number;
   comentario?: string;
@@ -59,10 +60,16 @@ export interface RelatorioColaborador {
   detalhes_por_cliente: DetalheCliente[];
 }
 
+export interface HorasPorTipo {
+  issue_type: string;
+  total_horas: number;
+}
+
 export interface ResumoColaborador {
   nome_colaborador: string;
   total_horas: number;
   percentual_contribuicao: number;
+  por_tipo: HorasPorTipo[];
 }
 
 export interface RelatorioProjeto {
@@ -71,6 +78,7 @@ export interface RelatorioProjeto {
   cliente_associado?: string;
   total_horas: number;
   colaboradores: ResumoColaborador[];
+  horas_por_tipo: HorasPorTipo[];
 }
 
 export interface ColaboradorCliente {

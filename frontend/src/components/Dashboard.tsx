@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import MultiFilter from './MultiFilter';
-import { getRelatorioCompleto, getColaboradores, type CapacityVsReal, type ColaboradorConfig } from '../api';
+import { getRelatorioCompleto, type CapacityVsReal } from '../api';
 import { exportCSV, exportExcel } from '../export';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -85,24 +85,13 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
   const [projetos, setProjetos] = useState<RelatorioProjeto[]>([]);
   const [clientes, setClientes] = useState<RelatorioCliente[]>([]);
   const [billable, setBillable] = useState<ResumoBillable | null>(null);
-  const [exclColabs, setExclColabs] = useState<Set<string>>(new Set());
   const [exclProjetos, setExclProjetos] = useState<Set<string>>(new Set());
   const [exclClientes, setExclClientes] = useState<Set<string>>(new Set());
-  const [expandedColab, setExpandedColab] = useState<string | null>(null);
   const [expandedCliente, setExpandedCliente] = useState<string | null>(null);
+  const [expandedProjeto, setExpandedProjeto] = useState<string | null>(null);
   const [capacityVsReal, setCapacityVsReal] = useState<CapacityVsReal[]>([]);
   const [diasUteis, setDiasUteis] = useState(0);
-  const [colabConfigs, setColabConfigs] = useState<Record<string, ColaboradorConfig>>({});
-  const [filtroTime, setFiltroTime] = useState<string>('');
-  const [filtroPerfil, setFiltroPerfil] = useState<string>('');
 
-  const colabsFiltrados = useMemo(() => {
-    let filtered = colaboradores;
-    if (exclColabs.size > 0) filtered = filtered.filter(c => !exclColabs.has(c.nome_colaborador));
-    if (filtroTime) filtered = filtered.filter(c => (colabConfigs[c.nome_colaborador]?.time || '') === filtroTime);
-    if (filtroPerfil) filtered = filtered.filter(c => (colabConfigs[c.nome_colaborador]?.perfil || '') === filtroPerfil);
-    return filtered;
-  }, [colaboradores, exclColabs, filtroTime, filtroPerfil, colabConfigs]);
   const projetosFiltrados = useMemo(() =>
     exclProjetos.size === 0 ? projetos : projetos.filter(p => !exclProjetos.has(p.projeto_key)),
     [projetos, exclProjetos]);
@@ -110,7 +99,6 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
     exclClientes.size === 0 ? clientes : clientes.filter(c => !exclClientes.has(c.cliente)),
     [clientes, exclClientes]);
 
-  const cs = useSortable(colabsFiltrados, 'total_horas');
   const ps = useSortable(projetosFiltrados, 'total_horas');
   const cls = useSortable(clientesFiltrados, 'total_horas');
 
@@ -120,9 +108,8 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
     try {
       const d = await getRelatorioCompleto(dataInicio, dataFim);
       setResumo(d.resumo); setColaboradores(d.colaboradores); setProjetos(d.projetos); setClientes(d.clientes); setBillable(d.billable); setCapacityVsReal(d.capacity_vs_real || []); setDiasUteis(d.dias_uteis || 0);
-      getColaboradores().then(setColabConfigs).catch(() => {});
-      setExclColabs(new Set()); setExclProjetos(new Set()); setExclClientes(new Set());
-      setExpandedColab(null); setExpandedCliente(null);
+      setExclProjetos(new Set()); setExclClientes(new Set());
+      setExpandedCliente(null); setExpandedProjeto(null);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Erro';
       if (msg.includes('Conecte ao Jira primeiro')) { onDesconectado(); return; }
@@ -130,7 +117,7 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
     } finally { setLoading(false); }
   }, [dataInicio, dataFim, onDesconectado]);
 
-  useEffect(() => { buscar(); getColaboradores().then(setColabConfigs).catch(() => {}); }, []);
+  useEffect(() => { buscar(); }, []);
 
   const tabId = tab as 'resumo' | 'colaboradores' | 'projetos' | 'clientes';
 
@@ -307,141 +294,67 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
     );
   };
 
-  const renderColaboradores = () => {
-    type ColabRow = { _key: string; _type: "parent" | "child"; col1: string; col2: string; col3: string; parentName?: string };
-    const rows: ColabRow[] = [];
-    for (const c of cs.sorted) {
+  const renderProjetos = () => {
+    type ProjRow = {
+      _key: string;
+      _type: 'parent' | 'child-colab' | 'child-tipo';
+      col1: string; col2: string; col3: string; col4: string;
+      parentKey?: string;
+    };
+    const rows: ProjRow[] = [];
+    for (const p of ps.sorted) {
       rows.push({
-        _key: c.email_colaborador,
-        _type: "parent",
-        col1: c.nome_colaborador,
-        col2: "",
-        col3: `${c.total_horas.toFixed(1)}h`,
-        parentName: c.nome_colaborador,
+        _key: p.projeto_key,
+        _type: 'parent',
+        col1: p.projeto_nome,
+        col2: p.projeto_key,
+        col3: p.horas_por_tipo?.map(t => `${t.issue_type}: ${t.total_horas.toFixed(1)}h`).join(' | ') || '',
+        col4: `${p.total_horas.toFixed(1)}h`,
+        parentKey: p.projeto_key,
       });
-      if (expandedColab === c.nome_colaborador) {
-        for (const [idx, dc] of c.detalhes_por_cliente.entries()) {
+      if (expandedProjeto === p.projeto_key) {
+        // Section: Colaboradores
+        rows.push({
+          _key: `${p.projeto_key}-header-colab`,
+          _type: 'child-tipo',
+          col1: 'Colaboradores', col2: '', col3: '', col4: '',
+          parentKey: p.projeto_key,
+        });
+        for (const c of [...p.colaboradores].sort((a, b) => b.total_horas - a.total_horas)) {
           rows.push({
-            _key: `${c.email_colaborador}-child-${idx}`,
-            _type: "child",
-            col1: dc.cliente,
-            col2: dc.projetos.join(", "),
-            col3: `${dc.total_horas.toFixed(1)}h`,
-            parentName: c.nome_colaborador,
+            _key: `${p.projeto_key}-colab-${c.nome_colaborador}`,
+            _type: 'child-colab',
+            col1: c.nome_colaborador,
+            col2: `${c.percentual_contribuicao.toFixed(0)}%`,
+            col3: c.por_tipo?.map(t => `${t.issue_type}: ${t.total_horas.toFixed(1)}h`).join(' | ') || '',
+            col4: `${c.total_horas.toFixed(1)}h`,
+            parentKey: p.projeto_key,
           });
+        }
+        // Section: Por Tipo
+        if (p.horas_por_tipo?.length > 0) {
+          rows.push({
+            _key: `${p.projeto_key}-header-tipo`,
+            _type: 'child-tipo',
+            col1: 'Por Tipo de Issue', col2: '', col3: '', col4: '',
+            parentKey: p.projeto_key,
+          });
+          for (const t of p.horas_por_tipo) {
+            rows.push({
+              _key: `${p.projeto_key}-tipo-${t.issue_type}`,
+              _type: 'child-colab',
+              col1: t.issue_type,
+              col2: p.total_horas > 0 ? `${(t.total_horas / p.total_horas * 100).toFixed(0)}%` : '0%',
+              col3: '',
+              col4: `${t.total_horas.toFixed(1)}h`,
+              parentKey: p.projeto_key,
+            });
+          }
         }
       }
     }
 
     return (
-    <SpaceBetween size="l">
-      {colaboradores.length > 0 && (
-        <SpaceBetween size="s" direction="horizontal" alignItems="center">
-          <MultiFilter label="Filtrar Colaboradores" options={colaboradores.map(c => c.nome_colaborador)} excluded={exclColabs} onChange={setExclColabs} />
-          <div style={{ display: "inline-block", minWidth: 180 }}>
-            <select
-              value={filtroTime}
-              onChange={e => setFiltroTime(e.target.value)}
-              style={{ padding: "8px 12px", borderRadius: 8, border: "2px solid #e9ebed", fontSize: 14, background: "#fff", color: "#16191f", width: "100%" }}
-            >
-              <option value="">Todos os Times</option>
-              {[...new Set(Object.values(colabConfigs).map(c => c.time).filter(Boolean))].sort().map(t => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
-          </div>
-          <div style={{ display: "inline-block", minWidth: 160 }}>
-            <select
-              value={filtroPerfil}
-              onChange={e => setFiltroPerfil(e.target.value)}
-              style={{ padding: "8px 12px", borderRadius: 8, border: "2px solid #e9ebed", fontSize: 14, background: "#fff", color: "#16191f", width: "100%" }}
-            >
-              <option value="">Todos os Perfis</option>
-              <option value="Tech Leader">Tech Leader</option>
-              <option value="Efetivo">Efetivo</option>
-              <option value="Estagiario">Estagiário</option>
-            </select>
-          </div>
-          {(exclColabs.size > 0 || filtroTime || filtroPerfil) && <Box color="text-status-inactive" fontSize="body-s">{colabsFiltrados.reduce((s, c) => s + c.total_horas, 0).toFixed(1)}h total filtrado</Box>}
-        </SpaceBetween>
-      )}
-
-      {colaboradores.length > 0 && (
-        <Container>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={cs.sorted.slice(0,15).map(c=>({nome:c.nome_colaborador.split(" ")[0],horas:c.total_horas}))}>
-              <XAxis dataKey="nome" tick={{fill:"#aaa",fontSize:11}} /><YAxis tick={{fill:"#aaa",fontSize:11}} />
-              <Tooltip contentStyle={tt} /><Bar dataKey="horas" fill="#FF6B00" radius={[4,4,0,0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </Container>
-      )}
-
-      <Container>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ borderBottom: "2px solid #e9ebed" }}>
-              <th style={{ width: 40, padding: "12px 8px" }} />
-              <th style={{ textAlign: "left", padding: "12px 16px", fontSize: 14, color: "#545b64" }}>Colaborador</th>
-              <th style={{ textAlign: "left", padding: "12px 16px", fontSize: 14, color: "#545b64" }}>Time</th>
-              <th style={{ textAlign: "left", padding: "12px 16px", fontSize: 14, color: "#545b64" }}>Perfil</th>
-              <th style={{ textAlign: "left", padding: "12px 16px", fontSize: 14, color: "#545b64" }}>Projetos</th>
-              <th style={{ textAlign: "left", padding: "12px 16px", fontSize: 14, color: "#545b64" }}>Total Horas</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map(row => (
-              <tr
-                key={row._key}
-                style={{
-                  borderBottom: "1px solid #e9ebed",
-                  backgroundColor: row._type === "child" ? "#f2f3f3" : "transparent",
-                  cursor: row._type === "parent" ? "pointer" : "default",
-                }}
-                onClick={() => {
-                  if (row._type === "parent") {
-                    setExpandedColab(prev => prev === row.parentName ? null : row.parentName!);
-                  }
-                }}
-              >
-                <td style={{ padding: "10px 8px", textAlign: "center", color: "#879596", fontSize: 14 }}>
-                  {row._type === "parent" ? (expandedColab === row.parentName ? "▼" : "▶") : ""}
-                </td>
-                <td style={{
-                  padding: row._type === "child" ? "8px 16px 8px 40px" : "10px 16px",
-                  fontWeight: row._type === "parent" ? 700 : 400,
-                  color: row._type === "child" ? "#0073bb" : "#16191f",
-                  fontSize: 14,
-                }}>
-                  {row.col1}
-                </td>
-                <td style={{ padding: row._type === "child" ? "8px 16px 8px 40px" : "10px 16px", fontSize: 12, color: "#5f6b7a" }}>
-                  {row._type === "parent" ? (colabConfigs[row.col1]?.time || "-") : ""}
-                </td>
-                <td style={{ padding: "10px 16px", fontSize: 12, color: "#5f6b7a" }}>
-                  {row._type === "parent" ? (colabConfigs[row.col1]?.perfil || "-") : ""}
-                </td>
-                <td style={{ padding: "10px 16px", fontSize: 13, color: "#5f6b7a" }}>
-                  {row.col2}
-                </td>
-                <td style={{
-                  padding: "10px 16px",
-                  fontWeight: row._type === "parent" ? 600 : 400,
-                  color: row._type === "child" ? "#d45b07" : "#16191f",
-                  fontSize: 14,
-                }}>
-                  {row.col3}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </Container>
-    </SpaceBetween>
-  );
-  };
-
-  const renderProjetos = () => (
     <SpaceBetween size="l">
       {projetos.length > 0 && (
         <SpaceBetween size="s" direction="horizontal" alignItems="center">
@@ -461,48 +374,61 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
         </Container>
       )}
 
-      <Table
-        columnDefinitions={[
-          {
-            id: 'nome',
-            header: 'Projeto',
-            cell: (item: RelatorioProjeto) => item.projeto_nome,
-            sortingField: 'projeto_nome',
-          },
-          {
-            id: 'key',
-            header: 'Key',
-            cell: (item: RelatorioProjeto) => item.projeto_key,
-            sortingField: 'projeto_key',
-          },
-          {
-            id: 'horas',
-            header: 'Total Horas',
-            cell: (item: RelatorioProjeto) => `${item.total_horas.toFixed(1)}h`,
-            sortingField: 'total_horas',
-          },
-        ]}
-        items={ps.sorted}
-        sortingColumn={
-          ps.sortKey === 'projeto_nome'
-            ? { sortingField: 'projeto_nome' }
-            : ps.sortKey === 'projeto_key'
-            ? { sortingField: 'projeto_key' }
-            : { sortingField: 'total_horas' }
-        }
-        sortingDescending={ps.sortDir === 'desc'}
-        onSortingChange={({ detail }) => {
-          const field = detail.sortingColumn.sortingField;
-          if (field === 'projeto_nome') ps.toggle('projeto_nome');
-          else if (field === 'projeto_key') ps.toggle('projeto_key');
-          else if (field === 'total_horas') ps.toggle('total_horas');
-        }}
-        trackBy="projeto_key"
-        variant="container"
-        empty={<Box textAlign="center" color="text-status-inactive">Nenhum projeto encontrado</Box>}
-      />
+      <Container>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr style={{ borderBottom: "2px solid #e9ebed" }}>
+              <th style={{ width: 40, padding: "12px 8px" }} />
+              <th style={{ textAlign: "left", padding: "12px 16px", fontSize: 14, color: "#545b64" }}>Projeto</th>
+              <th style={{ textAlign: "left", padding: "12px 16px", fontSize: 14, color: "#545b64" }}>Key / %</th>
+              <th style={{ textAlign: "left", padding: "12px 16px", fontSize: 14, color: "#545b64" }}>Tipos de Issue</th>
+              <th style={{ textAlign: "right", padding: "12px 16px", fontSize: 14, color: "#545b64" }}>Total Horas</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(row => {
+              const isSectionHeader = row._type === 'child-tipo' && (row.col1 === 'Colaboradores' || row.col1 === 'Por Tipo de Issue');
+              return (
+                <tr
+                  key={row._key}
+                  style={{
+                    borderBottom: "1px solid #e9ebed",
+                    backgroundColor: row._type === 'parent' ? 'transparent' : isSectionHeader ? '#e9ebed' : '#f8f9fa',
+                    cursor: row._type === 'parent' ? 'pointer' : 'default',
+                  }}
+                  onClick={() => {
+                    if (row._type === 'parent') {
+                      setExpandedProjeto(prev => prev === row.parentKey ? null : row.parentKey!);
+                    }
+                  }}
+                >
+                  <td style={{ padding: "10px 8px", textAlign: "center", color: "#879596", fontSize: 14 }}>
+                    {row._type === 'parent' ? (expandedProjeto === row.parentKey ? '▼' : '▶') : ''}
+                  </td>
+                  <td style={{
+                    padding: row._type === 'parent' ? "10px 16px" : isSectionHeader ? "6px 16px 6px 32px" : "8px 16px 8px 48px",
+                    fontWeight: row._type === 'parent' ? 700 : isSectionHeader ? 600 : 400,
+                    color: row._type === 'parent' ? "#16191f" : isSectionHeader ? "#545b64" : "#0073bb",
+                    fontSize: row._type === 'parent' ? 14 : 13,
+                    textTransform: isSectionHeader ? 'uppercase' : 'none',
+                    letterSpacing: isSectionHeader ? 1 : 0,
+                  }}>
+                    {row.col1}
+                  </td>
+                  <td style={{ padding: "8px 16px", fontSize: 12, color: "#5f6b7a" }}>{row.col2}</td>
+                  <td style={{ padding: "8px 16px", fontSize: 12, color: "#5f6b7a" }}>{row.col3}</td>
+                  <td style={{ padding: "8px 16px", fontSize: 13, textAlign: "right", fontWeight: row._type === 'parent' ? 600 : 400, color: row._type === 'parent' ? "#16191f" : "#d45b07" }}>
+                    {row.col4}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </Container>
     </SpaceBetween>
   );
+  };
 
   const renderClientes = () => {
     type CliRow = { _key: string; _type: 'parent' | 'child'; cliente: string; horas: string; tipoOuProjetos: string | React.ReactNode; parentCliente?: string };
@@ -681,7 +607,7 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
 
             {!loading && (<>
               <div style={{ display: 'flex', gap: 0, borderBottom: '2px solid #e9ebed', marginBottom: 16 }}>
-                {(['resumo','colaboradores','projetos','clientes','capacity'] as const).map(t => (
+                {(['resumo','projetos','clientes','capacity'] as const).map(t => (
                   <button key={t} onClick={() => setTab(t)} style={{
                     padding: '10px 20px', background: 'none', border: 'none',
                     color: tab === t ? '#0073bb' : '#545b64',
@@ -691,7 +617,6 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
                 ))}
               </div>
               {tab === 'resumo' && renderResumo()}
-              {tab === 'colaboradores' && renderColaboradores()}
               {tab === 'projetos' && renderProjetos()}
               {tab === 'clientes' && renderClientes()}
               {tab === 'capacity' && <Capacity dataInicio={dataInicio} dataFim={dataFim} />}
