@@ -4,6 +4,8 @@ services:
     container_name: timetracking-backend
     env_file:
       - ./backend/.env
+    volumes:
+      - ./backend/colaboradores.json:/app/colaboradores.json
     expose:
       - "8000"
     restart: unless-stopped

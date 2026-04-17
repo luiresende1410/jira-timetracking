@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import MultiFilter from './MultiFilter';
-import { getRelatorioCompleto } from '../api';
+import { getRelatorioCompleto, type CapacityVsReal } from '../api';
 import { exportCSV, exportExcel } from '../export';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -90,6 +90,8 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
   const [exclClientes, setExclClientes] = useState<Set<string>>(new Set());
   const [expandedColab, setExpandedColab] = useState<string | null>(null);
   const [expandedCliente, setExpandedCliente] = useState<string | null>(null);
+  const [capacityVsReal, setCapacityVsReal] = useState<CapacityVsReal[]>([]);
+  const [diasUteis, setDiasUteis] = useState(0);
 
   const colabsFiltrados = useMemo(() =>
     exclColabs.size === 0 ? colaboradores : colaboradores.filter(c => !exclColabs.has(c.nome_colaborador)),
@@ -110,7 +112,7 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
     setLoading(true); setErro('');
     try {
       const d = await getRelatorioCompleto(dataInicio, dataFim);
-      setResumo(d.resumo); setColaboradores(d.colaboradores); setProjetos(d.projetos); setClientes(d.clientes); setBillable(d.billable);
+      setResumo(d.resumo); setColaboradores(d.colaboradores); setProjetos(d.projetos); setClientes(d.clientes); setBillable(d.billable); setCapacityVsReal(d.capacity_vs_real || []); setDiasUteis(d.dias_uteis || 0);
       setExclColabs(new Set()); setExclProjetos(new Set()); setExclClientes(new Set());
       setExpandedColab(null); setExpandedCliente(null);
     } catch (err: unknown) {
@@ -175,6 +177,43 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
               </PieChart></ResponsiveContainer>
             </Container>
           </ColumnLayout>
+        )}
+
+        {capacityVsReal.length > 0 && (
+          <Container header={<Header variant="h3" description={`${diasUteis} dias úteis no período`}>Capacity vs Horas Reais</Header>}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ borderBottom: "2px solid #e9ebed" }}>
+                  <th style={{ textAlign: "left", padding: "10px 12px", fontSize: 13, color: "#545b64", fontWeight: 600 }}>Colaborador</th>
+                  <th style={{ textAlign: "left", padding: "10px 12px", fontSize: 13, color: "#545b64", fontWeight: 600 }}>Time</th>
+                  <th style={{ textAlign: "left", padding: "10px 12px", fontSize: 13, color: "#545b64", fontWeight: 600 }}>Perfil</th>
+                  <th style={{ textAlign: "right", padding: "10px 12px", fontSize: 13, color: "#545b64", fontWeight: 600 }}>Provisionado</th>
+                  <th style={{ textAlign: "right", padding: "10px 12px", fontSize: 13, color: "#545b64", fontWeight: 600 }}>Realizado</th>
+                  <th style={{ textAlign: "right", padding: "10px 12px", fontSize: 13, color: "#545b64", fontWeight: 600 }}>Diferença</th>
+                  <th style={{ textAlign: "right", padding: "10px 12px", fontSize: 13, color: "#545b64", fontWeight: 600 }}>%</th>
+                  <th style={{ textAlign: "center", padding: "10px 12px", fontSize: 13, color: "#545b64", fontWeight: 600 }}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {capacityVsReal.sort((a, b) => a.time.localeCompare(b.time) || a.nome.localeCompare(b.nome)).map(c => (
+                  <tr key={c.nome} style={{ borderBottom: "1px solid #e9ebed" }}>
+                    <td style={{ padding: "8px 12px", fontSize: 13 }}>{c.nome}</td>
+                    <td style={{ padding: "8px 12px", fontSize: 12, color: "#5f6b7a" }}>{c.time}</td>
+                    <td style={{ padding: "8px 12px", fontSize: 12, color: "#5f6b7a" }}>{c.perfil}</td>
+                    <td style={{ padding: "8px 12px", fontSize: 13, textAlign: "right" }}>{c.horas_provisionadas.toFixed(1)}h</td>
+                    <td style={{ padding: "8px 12px", fontSize: 13, textAlign: "right", fontWeight: 600 }}>{c.horas_reais.toFixed(1)}h</td>
+                    <td style={{ padding: "8px 12px", fontSize: 13, textAlign: "right", color: c.diferenca >= 0 ? "#037f0c" : "#d13212" }}>{c.diferenca > 0 ? "+" : ""}{c.diferenca.toFixed(1)}h</td>
+                    <td style={{ padding: "8px 12px", fontSize: 13, textAlign: "right", fontWeight: 600 }}>{c.percentual_utilizacao.toFixed(0)}%</td>
+                    <td style={{ padding: "8px 12px", textAlign: "center" }}>
+                      <StatusIndicator type={c.status === "ok" ? "success" : c.status === "atencao" ? "warning" : "error"}>
+                        {c.status === "ok" ? "OK" : c.status === "atencao" ? "Atenção" : "Crítico"}
+                      </StatusIndicator>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Container>
         )}
       </SpaceBetween>
     );

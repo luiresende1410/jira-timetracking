@@ -36,12 +36,25 @@ export async function conectar(config: ConfiguracaoJira) {
   );
 }
 
+export interface CapacityVsReal {
+  nome: string;
+  perfil: string;
+  time: string;
+  horas_provisionadas: number;
+  horas_reais: number;
+  diferenca: number;
+  percentual_utilizacao: number;
+  status: 'ok' | 'atencao' | 'critico';
+}
+
 export interface RelatorioCompleto {
   resumo: ResumoGeral;
   colaboradores: RelatorioColaborador[];
   projetos: RelatorioProjeto[];
   clientes: RelatorioCliente[];
   billable: ResumoBillable;
+  capacity_vs_real: CapacityVsReal[];
+  dias_uteis: number;
 }
 
 export async function getRelatorioCompleto(dataInicio: string, dataFim: string) {

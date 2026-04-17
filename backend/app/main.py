@@ -139,9 +139,34 @@ async def relatorio_completo(
         if c.cliente == "Sem Cliente":
             c.cliente = "Projetos Internos"
 
+    # Cruzar horas reais com capacity provisionada
+    capacity_data = calcular_capacity(data_inicio, data_fim)
+    colaboradores_report = _gerador.relatorio_por_colaborador(worklogs)
+
+    # Mapear horas reais por nome de colaborador
+    horas_reais_map = {c.nome_colaborador: c.total_horas for c in colaboradores_report}
+
+    capacity_vs_real = []
+    for cap_colab in capacity_data["colaboradores"]:
+        nome = cap_colab["nome"]
+        horas_reais = horas_reais_map.get(nome, 0.0)
+        total_prov = cap_colab["total_provisionado"]
+        diferenca = round(horas_reais - total_prov, 1)
+        percentual = round((horas_reais / total_prov * 100) if total_prov > 0 else 0, 1)
+        capacity_vs_real.append({
+            "nome": nome,
+            "perfil": cap_colab["perfil"],
+            "time": cap_colab["time"],
+            "horas_provisionadas": total_prov,
+            "horas_reais": round(horas_reais, 1),
+            "diferenca": diferenca,
+            "percentual_utilizacao": percentual,
+            "status": "ok" if percentual >= 90 else ("atencao" if percentual >= 70 else "critico"),
+        })
+
     return {
         "resumo": _gerador.resumo_geral(worklogs, data_inicio, data_fim),
-        "colaboradores": _gerador.relatorio_por_colaborador(worklogs),
+        "colaboradores": colaboradores_report,
         "projetos": _gerador.relatorio_por_projeto(worklogs),
         "clientes": [c.model_dump() for c in clientes],
         "billable": {
@@ -150,6 +175,8 @@ async def relatorio_completo(
             "total": round(billable + non_billable, 2),
             "percentual_billable": round(billable / (billable + non_billable) * 100, 2) if (billable + non_billable) > 0 else 0,
         },
+        "capacity_vs_real": capacity_vs_real,
+        "dias_uteis": capacity_data["dias_uteis"],
     }
 
 
