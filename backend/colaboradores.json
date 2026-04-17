@@ -1,89 +1,89 @@
 {
-  "Alessandro Oliveira": {
-    "perfil": "Efetivo",
-    "time": "A definir"
-  },
-  "Andre Novaes": {
-    "perfil": "Efetivo",
-    "time": "A definir"
-  },
   "Bruno Loschi": {
-    "perfil": "Efetivo",
-    "time": "A definir"
-  },
-  "Felipe Vieira da Silva": {
-    "perfil": "Efetivo",
-    "time": "A definir"
+    "perfil": "Estagiario",
+    "time": "SRE - TORINO"
   },
   "Gabriel Abramo": {
     "perfil": "Efetivo",
-    "time": "A definir"
-  },
-  "Guilherme dos Santos Ramos": {
-    "perfil": "Efetivo",
-    "time": "A definir"
-  },
-  "Gustavo Kowalski": {
-    "perfil": "Efetivo",
-    "time": "A definir"
-  },
-  "Gustavo Silva": {
-    "perfil": "Efetivo",
-    "time": "A definir"
-  },
-  "Iago Lucas Fernandes de Faria": {
-    "perfil": "Efetivo",
-    "time": "A definir"
-  },
-  "Jefferson Silva": {
-    "perfil": "Efetivo",
-    "time": "A definir"
-  },
-  "João Felipe Bertini": {
-    "perfil": "Efetivo",
-    "time": "A definir"
-  },
-  "Kayke Peres da Costa": {
-    "perfil": "Efetivo",
-    "time": "A definir"
-  },
-  "Kayky Stiliano": {
-    "perfil": "Efetivo",
-    "time": "A definir"
-  },
-  "Leonardo Miranda": {
-    "perfil": "Efetivo",
-    "time": "A definir"
-  },
-  "Luany Avila dos Anjos": {
-    "perfil": "Efetivo",
-    "time": "A definir"
-  },
-  "Lucas Ortiz": {
-    "perfil": "Efetivo",
-    "time": "A definir"
+    "time": "SRE - TORINO"
   },
   "Lucas Torino": {
     "perfil": "Efetivo",
-    "time": "A definir"
+    "time": "SRE - TORINO"
+  },
+  "Vinicius Rodrigues dos Santos": {
+    "perfil": "Estagiario",
+    "time": "SRE - TORINO"
+  },
+  "Vitor da Silva Sant'ana": {
+    "perfil": "Efetivo",
+    "time": "SRE - TORINO"
+  },
+  "Felipe Vieira da Silva": {
+    "perfil": "Estagiario",
+    "time": "SRE - PRATO"
+  },
+  "Guilherme dos Santos Ramos": {
+    "perfil": "Efetivo",
+    "time": "SRE - PRATO"
+  },
+  "Iago Lucas Fernandes de Faria": {
+    "perfil": "Estagiario",
+    "time": "SRE - PRATO"
+  },
+  "Leonardo Miranda": {
+    "perfil": "Tech Leader",
+    "time": "SRE - PRATO"
+  },
+  "Lucas Ortiz": {
+    "perfil": "Efetivo",
+    "time": "SRE - PRATO"
+  },
+  "Andre Novaes": {
+    "perfil": "Estagiario",
+    "time": "PROJETOS"
+  },
+  "Gustavo Kowalski": {
+    "perfil": "Estagiario",
+    "time": "PROJETOS"
+  },
+  "Gustavo Silva": {
+    "perfil": "Efetivo",
+    "time": "PROJETOS"
+  },
+  "Jefferson Silva": {
+    "perfil": "Tech Leader",
+    "time": "PROJETOS"
+  },
+  "João Felipe Bertini": {
+    "perfil": "Estagiario",
+    "time": "PROJETOS"
+  },
+  "Kayke Peres da Costa": {
+    "perfil": "Estagiario",
+    "time": "PROJETOS"
+  },
+  "Kayky Stiliano": {
+    "perfil": "Estagiario",
+    "time": "PROJETOS"
   },
   "Matheus Angelo": {
     "perfil": "Efetivo",
-    "time": "A definir"
+    "time": "PROJETOS"
+  },
+  "Luany Avila dos Anjos": {
+    "perfil": "Estagiario",
+    "time": "DEV - LÉO"
   },
   "Matheus Nascimento": {
-    "perfil": "Efetivo",
-    "time": "A definir"
+    "perfil": "Estagiario",
+    "time": "DEV - LÉO"
   },
   "Nattan Souza": {
-    "perfil": "Efetivo",
-    "time": "A definir"
+    "perfil": "Estagiario",
+    "time": "DEV - LÉO"
   },
-  "Vinicius Rodrigues dos Santos": {
-    "perfil": "Efetivo",
-    "time": "A definir"
-  },
-  "Vitor da Silva Sant'ana": {
+  "Alessandro Oliveira": {
     "perfil": "Efetivo",
     "time": "A definir"
   }
