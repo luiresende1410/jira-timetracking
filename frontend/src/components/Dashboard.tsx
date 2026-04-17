@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import MultiFilter from './MultiFilter';
-import { getRelatorioCompleto, type CapacityVsReal } from '../api';
+import { getRelatorioCompleto, getColaboradores, type CapacityVsReal, type ColaboradorConfig } from '../api';
 import { exportCSV, exportExcel } from '../export';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -92,10 +92,17 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
   const [expandedCliente, setExpandedCliente] = useState<string | null>(null);
   const [capacityVsReal, setCapacityVsReal] = useState<CapacityVsReal[]>([]);
   const [diasUteis, setDiasUteis] = useState(0);
+  const [colabConfigs, setColabConfigs] = useState<Record<string, ColaboradorConfig>>({});
+  const [filtroTime, setFiltroTime] = useState<string>('');
+  const [filtroPerfil, setFiltroPerfil] = useState<string>('');
 
-  const colabsFiltrados = useMemo(() =>
-    exclColabs.size === 0 ? colaboradores : colaboradores.filter(c => !exclColabs.has(c.nome_colaborador)),
-    [colaboradores, exclColabs]);
+  const colabsFiltrados = useMemo(() => {
+    let filtered = colaboradores;
+    if (exclColabs.size > 0) filtered = filtered.filter(c => !exclColabs.has(c.nome_colaborador));
+    if (filtroTime) filtered = filtered.filter(c => (colabConfigs[c.nome_colaborador]?.time || '') === filtroTime);
+    if (filtroPerfil) filtered = filtered.filter(c => (colabConfigs[c.nome_colaborador]?.perfil || '') === filtroPerfil);
+    return filtered;
+  }, [colaboradores, exclColabs, filtroTime, filtroPerfil, colabConfigs]);
   const projetosFiltrados = useMemo(() =>
     exclProjetos.size === 0 ? projetos : projetos.filter(p => !exclProjetos.has(p.projeto_key)),
     [projetos, exclProjetos]);
@@ -113,6 +120,7 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
     try {
       const d = await getRelatorioCompleto(dataInicio, dataFim);
       setResumo(d.resumo); setColaboradores(d.colaboradores); setProjetos(d.projetos); setClientes(d.clientes); setBillable(d.billable); setCapacityVsReal(d.capacity_vs_real || []); setDiasUteis(d.dias_uteis || 0);
+      getColaboradores().then(setColabConfigs).catch(() => {});
       setExclColabs(new Set()); setExclProjetos(new Set()); setExclClientes(new Set());
       setExpandedColab(null); setExpandedCliente(null);
     } catch (err: unknown) {
@@ -122,7 +130,7 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
     } finally { setLoading(false); }
   }, [dataInicio, dataFim, onDesconectado]);
 
-  useEffect(() => { buscar(); }, []);
+  useEffect(() => { buscar(); getColaboradores().then(setColabConfigs).catch(() => {}); }, []);
 
   const tabId = tab as 'resumo' | 'colaboradores' | 'projetos' | 'clientes';
 
@@ -250,7 +258,31 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
       {colaboradores.length > 0 && (
         <SpaceBetween size="s" direction="horizontal" alignItems="center">
           <MultiFilter label="Filtrar Colaboradores" options={colaboradores.map(c => c.nome_colaborador)} excluded={exclColabs} onChange={setExclColabs} />
-          {exclColabs.size > 0 && <Box color="text-status-inactive" fontSize="body-s">{colabsFiltrados.reduce((s, c) => s + c.total_horas, 0).toFixed(1)}h total filtrado</Box>}
+          <div style={{ display: "inline-block", minWidth: 180 }}>
+            <select
+              value={filtroTime}
+              onChange={e => setFiltroTime(e.target.value)}
+              style={{ padding: "8px 12px", borderRadius: 8, border: "2px solid #e9ebed", fontSize: 14, background: "#fff", color: "#16191f", width: "100%" }}
+            >
+              <option value="">Todos os Times</option>
+              {[...new Set(Object.values(colabConfigs).map(c => c.time).filter(Boolean))].sort().map(t => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+          </div>
+          <div style={{ display: "inline-block", minWidth: 160 }}>
+            <select
+              value={filtroPerfil}
+              onChange={e => setFiltroPerfil(e.target.value)}
+              style={{ padding: "8px 12px", borderRadius: 8, border: "2px solid #e9ebed", fontSize: 14, background: "#fff", color: "#16191f", width: "100%" }}
+            >
+              <option value="">Todos os Perfis</option>
+              <option value="Tech Leader">Tech Leader</option>
+              <option value="Efetivo">Efetivo</option>
+              <option value="Estagiario">Estagiário</option>
+            </select>
+          </div>
+          {(exclColabs.size > 0 || filtroTime || filtroPerfil) && <Box color="text-status-inactive" fontSize="body-s">{colabsFiltrados.reduce((s, c) => s + c.total_horas, 0).toFixed(1)}h total filtrado</Box>}
         </SpaceBetween>
       )}
 
@@ -271,6 +303,8 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
             <tr style={{ borderBottom: "2px solid #e9ebed" }}>
               <th style={{ width: 40, padding: "12px 8px" }} />
               <th style={{ textAlign: "left", padding: "12px 16px", fontSize: 14, color: "#545b64" }}>Colaborador</th>
+              <th style={{ textAlign: "left", padding: "12px 16px", fontSize: 14, color: "#545b64" }}>Time</th>
+              <th style={{ textAlign: "left", padding: "12px 16px", fontSize: 14, color: "#545b64" }}>Perfil</th>
               <th style={{ textAlign: "left", padding: "12px 16px", fontSize: 14, color: "#545b64" }}>Projetos</th>
               <th style={{ textAlign: "left", padding: "12px 16px", fontSize: 14, color: "#545b64" }}>Total Horas</th>
             </tr>
@@ -300,6 +334,12 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
                   fontSize: 14,
                 }}>
                   {row.col1}
+                </td>
+                <td style={{ padding: row._type === "child" ? "8px 16px 8px 40px" : "10px 16px", fontSize: 12, color: "#5f6b7a" }}>
+                  {row._type === "parent" ? (colabConfigs[row.col1]?.time || "-") : ""}
+                </td>
+                <td style={{ padding: "10px 16px", fontSize: 12, color: "#5f6b7a" }}>
+                  {row._type === "parent" ? (colabConfigs[row.col1]?.perfil || "-") : ""}
                 </td>
                 <td style={{ padding: "10px 16px", fontSize: 13, color: "#5f6b7a" }}>
                   {row.col2}

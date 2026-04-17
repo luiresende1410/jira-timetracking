@@ -1,4 +1,5 @@
 import Multiselect from "@cloudscape-design/components/multiselect";
+import type { MultiselectProps } from "@cloudscape-design/components/multiselect";
 
 interface Props {
   label: string;
@@ -8,29 +9,29 @@ interface Props {
 }
 
 export default function MultiFilter({ label, options, excluded, onChange }: Props) {
-  // Cloudscape Multiselect works with "selected" items, but our API uses "excluded" items.
-  // We need to invert: selected = options NOT in excluded
-  const selectedOptions = options
+  const allOptions: MultiselectProps.Option[] = options.map(o => ({ label: o, value: o }));
+
+  const selectedOptions: MultiselectProps.Option[] = options
     .filter(o => !excluded.has(o))
     .map(o => ({ label: o, value: o }));
 
-  const allOptions = options.map(o => ({ label: o, value: o }));
-
-  const handleChange = (selectedItems: ReadonlyArray<{ value?: string }>) => {
-    const selectedSet = new Set(selectedItems.map(i => i.value).filter((v): v is string => v !== undefined));
-    const newExcluded = new Set(options.filter(o => !selectedSet.has(o)));
-    onChange(newExcluded);
-  };
-
   return (
-    <div style={{ display: 'inline-block', minWidth: 280 }}>
+    <div style={{ display: "inline-block", minWidth: 300 }}>
       <Multiselect
         selectedOptions={selectedOptions}
-        onChange={({ detail }) => handleChange(detail.selectedOptions)}
+        onChange={({ detail }) => {
+          const selectedSet = new Set(
+            detail.selectedOptions
+              .map(i => i.value)
+              .filter((v): v is string => v !== undefined)
+          );
+          onChange(new Set(options.filter(o => !selectedSet.has(o))));
+        }}
         options={allOptions}
         placeholder={label}
         filteringType="auto"
         tokenLimit={2}
+        hideTokens={false}
       />
     </div>
   );
