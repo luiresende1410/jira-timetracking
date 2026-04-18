@@ -97,8 +97,9 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
     const semMSP = projetos.filter(p => p.projeto_nome !== MSP_PROJETO);
     return exclProjetos.size === 0 ? semMSP : semMSP.filter(p => !exclProjetos.has(p.projeto_key));
   }, [projetos, exclProjetos]);
+  const MSP_KEY = 'AWS';
   const clientesMSP = useMemo(() =>
-    clientes.filter(c => c.colaboradores?.some(col => col.projetos.includes(MSP_PROJETO))),
+    clientes.filter(c => c.colaboradores?.some(col => col.projetos.includes(MSP_KEY))),
     [clientes]);
   const clientesFiltrados = useMemo(() =>
     exclClientes.size === 0 ? clientesMSP : clientesMSP.filter(c => !exclClientes.has(c.cliente)),
