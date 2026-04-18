@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+﻿import { useState, useMemo, useEffect, useCallback } from 'react';
 import MultiFilter from './MultiFilter';
 import { getRelatorioCompleto, type CapacityVsReal } from '../api';
 import { exportCSV, exportExcel } from '../export';
@@ -92,12 +92,17 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
   const [capacityVsReal, setCapacityVsReal] = useState<CapacityVsReal[]>([]);
   const [diasUteis, setDiasUteis] = useState(0);
 
-  const projetosFiltrados = useMemo(() =>
-    exclProjetos.size === 0 ? projetos : projetos.filter(p => !exclProjetos.has(p.projeto_key)),
-    [projetos, exclProjetos]);
+  const MSP_PROJETO = 'CloudDog - Suporte SRE';
+  const projetosFiltrados = useMemo(() => {
+    const semMSP = projetos.filter(p => p.projeto_nome !== MSP_PROJETO);
+    return exclProjetos.size === 0 ? semMSP : semMSP.filter(p => !exclProjetos.has(p.projeto_key));
+  }, [projetos, exclProjetos]);
+  const clientesMSP = useMemo(() =>
+    clientes.filter(c => c.colaboradores?.some(col => col.projetos.includes(MSP_PROJETO))),
+    [clientes]);
   const clientesFiltrados = useMemo(() =>
-    exclClientes.size === 0 ? clientes : clientes.filter(c => !exclClientes.has(c.cliente)),
-    [clientes, exclClientes]);
+    exclClientes.size === 0 ? clientesMSP : clientesMSP.filter(c => !exclClientes.has(c.cliente)),
+    [clientesMSP, exclClientes]);
 
   const ps = useSortable(projetosFiltrados, 'total_horas');
   const cls = useSortable(clientesFiltrados, 'total_horas');
@@ -613,7 +618,7 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
                     color: tab === t ? '#0073bb' : '#545b64',
                     borderBottom: tab === t ? '3px solid #0073bb' : '3px solid transparent',
                     fontWeight: tab === t ? 700 : 400, cursor: 'pointer', fontSize: 14, textTransform: 'capitalize',
-                  }}>{t}</button>
+                  }}>{t === 'clientes' ? 'MSP' : t}</button>
                 ))}
               </div>
               {tab === 'resumo' && renderResumo()}
