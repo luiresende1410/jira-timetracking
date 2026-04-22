@@ -509,11 +509,7 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
         pct,
         colaboradores: (clienteData?.colaboradores ?? []).map(c => ({ nome: c.nome_colaborador, horas: c.total_horas, projetos: c.projetos })),
       };
-    }).sort((a, b) => {
-      // Ordenar: primeiro por equipe, depois por nome
-      if (a.equipe !== b.equipe) return a.equipe.localeCompare(b.equipe);
-      return a.cliente.localeCompare(b.cliente);
-    });
+    }).sort((a, b) => a.cliente.localeCompare(b.cliente));
 
     // Filtrar rows pelo texto digitado
     const rowsFiltrados = filtroMSP.trim()
