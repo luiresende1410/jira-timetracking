@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx';
+﻿import * as XLSX from 'xlsx';
 import type {
   RelatorioColaborador,
   RelatorioProjeto,
@@ -20,7 +20,12 @@ function toCSV(rows: Record<string, string | number>[]): string {
   const headers = Object.keys(rows[0]);
   const lines = [headers.join(';')];
   for (const row of rows) {
-    lines.push(headers.map(h => String(row[h] ?? '')).join(';'));
+    lines.push(headers.map(h => {
+      const val = String(row[h] ?? '');
+      // Escapar campos com ponto-e-virgula ou aspas
+      return val.includes(';') || val.includes('"') || val.includes('\n')
+        ? `"${val.replace(/"/g, '""')}"` : val;
+    }).join(';'));
   }
   return lines.join('\n');
 }
@@ -37,7 +42,7 @@ function flatColaboradores(data: RelatorioColaborador[]) {
           ProjetoKey: p.projeto_key,
           Issue: a.issue_key,
           Resumo: a.issue_summary,
-          Data: a.data_registro,
+          Data: String(a.data_registro),
           Horas: a.horas,
           Comentario: a.comentario ?? '',
         });
@@ -65,7 +70,29 @@ function flatProjetos(data: RelatorioProjeto[]) {
 }
 
 function flatClientes(data: RelatorioCliente[]) {
-  return data.map(c => ({ Cliente: c.cliente, TotalHoras: c.total_horas }));
+  const rows: Record<string, string | number>[] = [];
+  for (const c of data) {
+    if (c.colaboradores && c.colaboradores.length > 0) {
+      for (const col of c.colaboradores) {
+        rows.push({
+          Cliente: c.cliente,
+          TotalHorasCliente: c.total_horas,
+          Colaborador: col.nome_colaborador,
+          HorasColaborador: col.total_horas,
+          Projetos: col.projetos.join(', '),
+        });
+      }
+    } else {
+      rows.push({
+        Cliente: c.cliente,
+        TotalHorasCliente: c.total_horas,
+        Colaborador: '',
+        HorasColaborador: 0,
+        Projetos: '',
+      });
+    }
+  }
+  return rows;
 }
 
 function flatResumo(data: ResumoGeral) {
@@ -82,16 +109,28 @@ function flatResumo(data: ResumoGeral) {
 export function exportCSV(
   tab: string,
   resumo: ResumoGeral | null,
-  colaboradores: RelatorioColaborador[],
+  _colaboradores: RelatorioColaborador[],
   projetos: RelatorioProjeto[],
   clientes: RelatorioCliente[],
 ) {
   let rows: Record<string, string | number>[] = [];
   let filename = 'relatorio';
-  if (tab === 'resumo' && resumo) { rows = flatResumo(resumo); filename = 'resumo'; }
-  else if (tab === 'colaboradores') { rows = flatColaboradores(colaboradores); filename = 'colaboradores'; }
-  else if (tab === 'projetos') { rows = flatProjetos(projetos); filename = 'projetos'; }
-  else if (tab === 'clientes') { rows = flatClientes(clientes); filename = 'clientes'; }
+
+  if (tab === 'resumo' && resumo) {
+    rows = flatResumo(resumo);
+    filename = 'resumo';
+  } else if (tab === 'projetos') {
+    rows = flatProjetos(projetos);
+    filename = 'projetos';
+  } else if (tab === 'clientes') {
+    rows = flatClientes(clientes);
+    filename = 'msp-clientes';
+  } else if (resumo) {
+    // fallback: exportar resumo
+    rows = flatResumo(resumo);
+    filename = 'resumo';
+  }
+
   if (rows.length === 0) return;
   const csv = toCSV(rows);
   const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -119,7 +158,7 @@ export function exportExcel(
   }
   if (clientes.length > 0) {
     const ws = XLSX.utils.json_to_sheet(flatClientes(clientes));
-    XLSX.utils.book_append_sheet(wb, ws, 'Clientes');
+    XLSX.utils.book_append_sheet(wb, ws, 'MSP Clientes');
   }
   XLSX.writeFile(wb, 'relatorio-timetracking.xlsx');
 }

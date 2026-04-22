@@ -153,7 +153,7 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
 
   useEffect(() => { buscar(); buscarTickets(); buscarMspCapacity(); }, []);
 
-  const tabId = tab as 'resumo' | 'colaboradores' | 'projetos' | 'clientes';
+  const tabId = tab;
 
   const renderResumo = () => {
     if (!resumo) return <Box textAlign="center" color="text-status-inactive">Nenhum dado carregado</Box>;
