@@ -94,6 +94,7 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
   const [loadingTickets, setLoadingTickets] = useState(false);
   const [expandedOrg, setExpandedOrg] = useState<string | null>(null);
   const [filtroOrg, setFiltroOrg] = useState('');
+  const [filtroMSP, setFiltroMSP] = useState('');
   const [mspCapacity, setMspCapacity] = useState<Record<string, ClienteMSP>>({});
 
   const MSP_PROJETO = 'CloudDog - Suporte SRE';
@@ -514,6 +515,11 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
       return a.cliente.localeCompare(b.cliente);
     });
 
+    // Filtrar rows pelo texto digitado
+    const rowsFiltrados = filtroMSP.trim()
+      ? rows.filter(r => r.cliente.toLowerCase().includes(filtroMSP.trim().toLowerCase()))
+      : rows;
+
     // Totais por equipe
     const getStatusColor = (pct: number, status: string) => {
       if (status === 'Suspenso') return '#879596';
@@ -533,6 +539,44 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
 
     return (
       <SpaceBetween size="l">
+        {/* Filtro por cliente */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: 260 }}>
+            <Box variant="awsui-key-label">Filtrar por cliente</Box>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+              <input
+                type="text"
+                value={filtroMSP}
+                onChange={e => { setFiltroMSP(e.target.value); setExpandedCliente(null); }}
+                placeholder="Digite o nome do cliente..."
+                style={{
+                  flex: 1,
+                  padding: '7px 12px',
+                  fontSize: 13,
+                  border: '1px solid #aab7b8',
+                  borderRadius: 4,
+                  outline: 'none',
+                  background: '#fff',
+                  color: '#16191f',
+                }}
+              />
+              {filtroMSP && (
+                <button
+                  onClick={() => { setFiltroMSP(''); setExpandedCliente(null); }}
+                  style={{ padding: '6px 12px', fontSize: 12, border: '1px solid #aab7b8', borderRadius: 4, background: '#f2f3f3', cursor: 'pointer', color: '#545b64' }}
+                >
+                  Limpar
+                </button>
+              )}
+            </div>
+            {filtroMSP && (
+              <Box color="text-status-inactive" fontSize="body-s">
+                {rowsFiltrados.length} cliente{rowsFiltrados.length !== 1 ? 's' : ''} encontrado{rowsFiltrados.length !== 1 ? 's' : ''}
+              </Box>
+            )}
+          </div>
+        </div>
+
         {/* Tabela detalhada */}
         <Container header={<Header variant="h3">Horas Contratadas vs Trabalhadas por Cliente</Header>}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -550,7 +594,7 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
               </tr>
             </thead>
             <tbody>
-              {rows.map(row => {
+              {rowsFiltrados.map(row => {
                 const cor = getStatusColor(row.pct, row.statusContrato);
                 const { type: stType, label: stLabel } = getStatusLabel(row.pct, row.statusContrato, row.horasTrabalhadas);
                 const isSusp = row.statusContrato === 'Suspenso';
