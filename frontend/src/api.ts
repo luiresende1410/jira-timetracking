@@ -170,3 +170,16 @@ export async function deleteClienteMSP(nome: string) {
     { method: 'DELETE' }
   );
 }
+export async function getPerfisCapacity() {
+  return request<Record<string, Record<string, number>>>(API + '/perfis-capacity');
+}
+
+export async function updatePerfilCapacity(
+  perfil: string,
+  categorias: Record<string, number>
+) {
+  return request<Record<string, number>>(
+    API + '/perfis-capacity/' + encodeURIComponent(perfil),
+    { method: 'PUT', body: JSON.stringify({ categorias }) }
+  );
+}

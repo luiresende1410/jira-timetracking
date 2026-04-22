@@ -1,0 +1,17 @@
+{
+  "Tech Leader": {
+    "Horas Administrativas": 4.0,
+    "Horas de Apoio": 2.0,
+    "Horas Efetivas": 2.0
+  },
+  "Efetivo": {
+    "Horas Administrativas": 1.0,
+    "Horas de Apoio": 3.0,
+    "Horas Efetivas": 4.0
+  },
+  "Estagiario": {
+    "Horas Administrativas": 1.0,
+    "Horas de Estudo": 3.0,
+    "Horas Efetivas": 2.0
+  }
+}

@@ -17,7 +17,8 @@ from .servico_capacity import (
     atualizar_colaborador,
     remover_colaborador,
     calcular_capacity,
-    PERFIS_CAPACITY,
+    listar_perfis,
+    atualizar_perfil,
 )
 from .models import (
     RelatorioColaborador,
@@ -207,7 +208,7 @@ async def delete_colaborador(nome: str):
 
 @app.get("/api/perfis")
 async def get_perfis():
-    return PERFIS_CAPACITY
+    return listar_perfis()
 
 
 @app.get("/api/capacity")
@@ -308,7 +309,36 @@ async def delete_cliente_msp(nome: str):
         _salvar_clientes_msp(data)
         return {"status": "removido"}
     raise HTTPException(status_code=404, detail="Cliente nao encontrado")
+
+# ===== Endpoints de Perfis Capacity =====
+
+class PerfilCapacityUpdate(BaseModel):
+    categorias: dict[str, float]
+
+
+@app.get("/api/perfis-capacity")
+async def get_perfis_capacity():
+    return listar_perfis()
+
+
+@app.put("/api/perfis-capacity/{perfil}")
+async def put_perfil_capacity(perfil: str, body: PerfilCapacityUpdate):
+    for categoria, horas in body.categorias.items():
+        if horas < 0:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Valor de horas para '{categoria}' deve ser maior ou igual a zero",
+            )
+    try:
+        resultado = atualizar_perfil(perfil, body.categorias)
+        return resultado
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
 @app.on_event("shutdown")
 async def shutdown():
     if _cliente:
         await _cliente.close()
+
+
+

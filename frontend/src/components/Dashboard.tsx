@@ -28,6 +28,7 @@ import StatusIndicator from "@cloudscape-design/components/status-indicator";
 import FormField from "@cloudscape-design/components/form-field";
 import Capacity from './Capacity';
 import ConfiguracoesMSP from './ConfiguracoesMSP';
+import ConfiguracoesTime from './ConfiguracoesTime';
 import Spinner from "@cloudscape-design/components/spinner";
 
 interface DashboardProps { onDesconectado: () => void; }
@@ -886,7 +887,12 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
               {tab === 'clientes' && renderClientes()}
               {tab === 'tickets' && renderTickets()}
               {tab === 'capacity' && <Capacity dataInicio={dataInicio} dataFim={dataFim} />}
-              {tab === 'configuracoes' && <ConfiguracoesMSP />}
+              {tab === 'configuracoes' && (
+                <SpaceBetween size="l">
+                  <ConfiguracoesMSP />
+                  <ConfiguracoesTime />
+                </SpaceBetween>
+              )}
             </>
             )}
           </SpaceBetween>
@@ -895,4 +901,6 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
     />
   );
 }
+
+
 

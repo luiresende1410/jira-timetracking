@@ -7,6 +7,7 @@
     volumes:
       - ./backend/colaboradores.json:/app/colaboradores.json
       - ./backend/clientes_msp.json:/app/clientes_msp.json
+      - ./backend/perfis_capacity.json:/app/perfis_capacity.json
     expose:
       - "8000"
     restart: unless-stopped
@@ -19,3 +20,4 @@
     depends_on:
       - backend
     restart: unless-stopped
+
