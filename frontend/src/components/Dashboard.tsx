@@ -27,6 +27,7 @@ import Alert from "@cloudscape-design/components/alert";
 import StatusIndicator from "@cloudscape-design/components/status-indicator";
 import FormField from "@cloudscape-design/components/form-field";
 import Capacity from './Capacity';
+import ConfiguracoesMSP from './ConfiguracoesMSP';
 import Spinner from "@cloudscape-design/components/spinner";
 
 interface DashboardProps { onDesconectado: () => void; }
@@ -871,13 +872,13 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
 
             {!loading && (<>
               <div style={{ display: 'flex', gap: 0, borderBottom: '2px solid #e9ebed', marginBottom: 16 }}>
-                {(['resumo','projetos','clientes','tickets','capacity'] as const).map(t => (
+                {(['resumo','projetos','clientes','tickets','capacity','configuracoes'] as const).map(t => (
                   <button key={t} onClick={() => setTab(t)} style={{
                     padding: '10px 20px', background: 'none', border: 'none',
                     color: tab === t ? '#0073bb' : '#545b64',
                     borderBottom: tab === t ? '3px solid #0073bb' : '3px solid transparent',
                     fontWeight: tab === t ? 700 : 400, cursor: 'pointer', fontSize: 14, textTransform: 'capitalize',
-                  }}>{t === 'clientes' ? 'MSP' : t === 'tickets' ? 'Tickets' : t}</button>
+                  }}>{t === 'clientes' ? 'MSP' : t === 'tickets' ? 'Tickets' : t === 'configuracoes' ? 'Configurações' : t}</button>
                 ))}
               </div>
               {tab === 'resumo' && renderResumo()}
@@ -885,6 +886,7 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
               {tab === 'clientes' && renderClientes()}
               {tab === 'tickets' && renderTickets()}
               {tab === 'capacity' && <Capacity dataInicio={dataInicio} dataFim={dataFim} />}
+              {tab === 'configuracoes' && <ConfiguracoesMSP />}
             </>
             )}
           </SpaceBetween>
