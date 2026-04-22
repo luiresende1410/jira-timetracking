@@ -1,17 +1,16 @@
 ﻿import { useState, useMemo, useEffect, useCallback } from 'react';
 import MultiFilter from './MultiFilter';
-import { getRelatorioCompleto, type CapacityVsReal } from '../api';
+import { getRelatorioCompleto, getTicketsAWS, getClientesMSP, type CapacityVsReal, type OrgTickets, type TicketAWS, type ClienteMSP } from '../api';
 import { exportCSV, exportExcel } from '../export';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend,
+  PieChart, Pie, Cell,
 } from 'recharts';
 import type {
   RelatorioColaborador,
   RelatorioProjeto,
   RelatorioCliente,
   ResumoGeral,
-  ResumoBillable,
 } from '../types';
 
 import AppLayout from "@cloudscape-design/components/app-layout";
@@ -20,7 +19,7 @@ import Header from "@cloudscape-design/components/header";
 import Container from "@cloudscape-design/components/container";
 import SpaceBetween from "@cloudscape-design/components/space-between";
 import Button from "@cloudscape-design/components/button";
-import Table from "@cloudscape-design/components/table";
+
 import Box from "@cloudscape-design/components/box";
 import ColumnLayout from "@cloudscape-design/components/column-layout";
 import DatePicker from "@cloudscape-design/components/date-picker";
@@ -84,13 +83,18 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
   const [colaboradores, setColaboradores] = useState<RelatorioColaborador[]>([]);
   const [projetos, setProjetos] = useState<RelatorioProjeto[]>([]);
   const [clientes, setClientes] = useState<RelatorioCliente[]>([]);
-  const [billable, setBillable] = useState<ResumoBillable | null>(null);
+
   const [exclProjetos, setExclProjetos] = useState<Set<string>>(new Set());
   const [exclClientes, setExclClientes] = useState<Set<string>>(new Set());
   const [expandedCliente, setExpandedCliente] = useState<string | null>(null);
   const [expandedProjeto, setExpandedProjeto] = useState<string | null>(null);
   const [capacityVsReal, setCapacityVsReal] = useState<CapacityVsReal[]>([]);
   const [diasUteis, setDiasUteis] = useState(0);
+  const [ticketsAWS, setTicketsAWS] = useState<OrgTickets[]>([]);
+  const [loadingTickets, setLoadingTickets] = useState(false);
+  const [expandedOrg, setExpandedOrg] = useState<string | null>(null);
+  const [filtroOrg, setFiltroOrg] = useState('');
+  const [mspCapacity, setMspCapacity] = useState<Record<string, ClienteMSP>>({});
 
   const MSP_PROJETO = 'CloudDog - Suporte SRE';
   const projetosFiltrados = useMemo(() => {
@@ -98,22 +102,45 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
     return exclProjetos.size === 0 ? semMSP : semMSP.filter(p => !exclProjetos.has(p.projeto_key));
   }, [projetos, exclProjetos]);
   const MSP_KEY = 'AWS';
+
   const clientesMSP = useMemo(() =>
-    clientes.filter(c => c.colaboradores?.some(col => col.projetos.includes(MSP_KEY))),
+    clientes.filter(c => c.colaboradores?.some(col => col.projetos.includes(MSP_KEY)) && c.cliente !== 'Projetos Internos'),
     [clientes]);
   const clientesFiltrados = useMemo(() =>
     exclClientes.size === 0 ? clientesMSP : clientesMSP.filter(c => !exclClientes.has(c.cliente)),
     [clientesMSP, exclClientes]);
 
   const ps = useSortable(projetosFiltrados, 'total_horas');
-  const cls = useSortable(clientesFiltrados, 'total_horas');
+
+
+  const buscarMspCapacity = useCallback(async () => {
+    try {
+      const d = await getClientesMSP();
+      setMspCapacity(d);
+    } catch {
+      // silencioso
+    }
+  }, []);
+
+  const buscarTickets = useCallback(async () => {
+    if (!dataInicio || !dataFim) return;
+    setLoadingTickets(true);
+    try {
+      const d = await getTicketsAWS(dataInicio, dataFim);
+      setTicketsAWS(d.por_organization);
+    } catch {
+      // silencioso - tickets podem nao estar disponiveis
+    } finally {
+      setLoadingTickets(false);
+    }
+  }, [dataInicio, dataFim]);
 
   const buscar = useCallback(async () => {
     if (!dataInicio || !dataFim) return;
     setLoading(true); setErro('');
     try {
       const d = await getRelatorioCompleto(dataInicio, dataFim);
-      setResumo(d.resumo); setColaboradores(d.colaboradores); setProjetos(d.projetos); setClientes(d.clientes); setBillable(d.billable); setCapacityVsReal(d.capacity_vs_real || []); setDiasUteis(d.dias_uteis || 0);
+      setResumo(d.resumo); setColaboradores(d.colaboradores); setProjetos(d.projetos); setClientes(d.clientes); setCapacityVsReal(d.capacity_vs_real || []); setDiasUteis(d.dias_uteis || 0);
       setExclProjetos(new Set()); setExclClientes(new Set());
       setExpandedCliente(null); setExpandedProjeto(null);
     } catch (err: unknown) {
@@ -123,7 +150,7 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
     } finally { setLoading(false); }
   }, [dataInicio, dataFim, onDesconectado]);
 
-  useEffect(() => { buscar(); }, []);
+  useEffect(() => { buscar(); buscarTickets(); buscarMspCapacity(); }, []);
 
   const tabId = tab as 'resumo' | 'colaboradores' | 'projetos' | 'clientes';
 
@@ -437,121 +464,312 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
   };
 
   const renderClientes = () => {
-    type CliRow = { _key: string; _type: 'parent' | 'child'; cliente: string; horas: string; tipoOuProjetos: string | React.ReactNode; parentCliente?: string };
-    const rows: CliRow[] = [];
-    for (const c of cls.sorted) {
-      const isBillable = c.cliente !== 'Projetos Internos' && !c.cliente.toLowerCase().startsWith('clouddog');
-      rows.push({
-        _key: c.cliente,
-        _type: 'parent',
-        cliente: c.cliente,
-        horas: `${c.total_horas.toFixed(1)}h`,
-        tipoOuProjetos: isBillable ? 'Billable' : 'Non-Billable',
-        parentCliente: c.cliente,
-      });
-      if (expandedCliente === c.cliente) {
-        for (const [idx, d] of (c.colaboradores || []).entries()) {
-          rows.push({
-            _key: `${c.cliente}-child-${idx}`,
-            _type: 'child',
-            cliente: d.nome_colaborador,
-            horas: `${d.total_horas.toFixed(1)}h`,
-            tipoOuProjetos: d.projetos.join(', '),
-            parentCliente: c.cliente,
-          });
-        }
-      }
-    }
+    // Calcular fator proporcional: quantos dias do período vs dias do mês completo
+    const dtInicio = new Date(dataInicio + 'T00:00:00');
+    const dtFim = new Date(dataFim + 'T00:00:00');
+    const diasPeriodo = Math.round((dtFim.getTime() - dtInicio.getTime()) / 86400000) + 1;
+    const diasNoMes = new Date(dtInicio.getFullYear(), dtInicio.getMonth() + 1, 0).getDate();
+    const fatorMes = diasPeriodo / diasNoMes;
+
+    // Montar lista unificada: clientes do capacity plan + clientes com horas no período
+    const horasPorCliente: Record<string, number> = {};
+    for (const c of clientesFiltrados) horasPorCliente[c.cliente] = c.total_horas;
+
+    // Todos os clientes do capacity plan + clientes com horas mas sem entry no plan
+    const todosClientes = new Set([
+      ...Object.keys(mspCapacity),
+      ...clientesFiltrados.map(c => c.cliente),
+    ]);
+
+    type MspRow = {
+      cliente: string;
+      equipe: string;
+      statusContrato: 'Ativo' | 'Suspenso' | 'Sem contrato';
+      horasContratadas: number;
+      horasContratadas_periodo: number;
+      horasTrabalhadas: number;
+      pct: number;
+      colaboradores: { nome: string; horas: number; projetos: string[] }[];
+    };
+
+    const rows: MspRow[] = Array.from(todosClientes).map(nome => {
+      const plan = mspCapacity[nome];
+      const horasTrab = horasPorCliente[nome] ?? 0;
+      const horasContr = plan ? plan.horas * fatorMes : 0;
+      const pct = horasContr > 0 ? (horasTrab / horasContr) * 100 : horasTrab > 0 ? 999 : 0;
+      const clienteData = clientesFiltrados.find(c => c.cliente === nome);
+      return {
+        cliente: nome,
+        equipe: plan?.equipe ?? '—',
+        statusContrato: plan?.status ?? 'Sem contrato',
+        horasContratadas: plan?.horas ?? 0,
+        horasContratadas_periodo: horasContr,
+        horasTrabalhadas: horasTrab,
+        pct,
+        colaboradores: (clienteData?.colaboradores ?? []).map(c => ({ nome: c.nome_colaborador, horas: c.total_horas, projetos: c.projetos })),
+      };
+    }).sort((a, b) => {
+      // Ordenar: primeiro por equipe, depois por nome
+      if (a.equipe !== b.equipe) return a.equipe.localeCompare(b.equipe);
+      return a.cliente.localeCompare(b.cliente);
+    });
+
+    // Totais por equipe
+    const getStatusColor = (pct: number, status: string) => {
+      if (status === 'Suspenso') return '#879596';
+      if (pct === 0) return '#879596';
+      if (pct > 110) return '#d13212';   // acima do contrato
+      if (pct >= 80) return '#037f0c';   // dentro do esperado
+      return '#f89256';                  // abaixo do esperado
+    };
+
+    const getStatusLabel = (pct: number, status: string, horasTrab: number) => {
+      if (status === 'Suspenso') return { type: 'stopped' as const, label: 'Suspenso' };
+      if (horasTrab === 0) return { type: 'pending' as const, label: 'Sem horas' };
+      if (pct > 110) return { type: 'error' as const, label: 'Acima' };
+      if (pct >= 80) return { type: 'success' as const, label: 'OK' };
+      return { type: 'warning' as const, label: 'Abaixo' };
+    };
 
     return (
-    <SpaceBetween size="l">
-      {clientes.length > 0 && (
-        <SpaceBetween size="s" direction="horizontal" alignItems="center">
-          <MultiFilter label="Filtrar Clientes" options={clientes.map(c => c.cliente)} excluded={exclClientes} onChange={setExclClientes} />
-          {exclClientes.size > 0 && <Box color="text-status-inactive" fontSize="body-s">{clientesFiltrados.reduce((s, c) => s + c.total_horas, 0).toFixed(1)}h total filtrado</Box>}
-        </SpaceBetween>
-      )}
-
-      {billable && (
-        <ColumnLayout columns={3}>
-          <Container>
-            <Box variant="awsui-key-label">Billable</Box>
-            <Box variant="awsui-value-large">
-              <StatusIndicator type="success">{billable.billable.toFixed(1)}h</StatusIndicator>
-            </Box>
-          </Container>
-          <Container>
-            <Box variant="awsui-key-label">Non-Billable</Box>
-            <Box variant="awsui-value-large">
-              <StatusIndicator type="error">{billable.non_billable.toFixed(1)}h</StatusIndicator>
-            </Box>
-          </Container>
-          <Container>
-            <Box variant="awsui-key-label">% Billable</Box>
-            <Box variant="awsui-value-large">
-              <StatusIndicator type="info">{billable.percentual_billable.toFixed(1)}%</StatusIndicator>
-            </Box>
-          </Container>
-        </ColumnLayout>
-      )}
-
-      {clientes.length > 0 && (
-        <Container header={<Header variant="h3">Distribuição por Cliente</Header>}>
-          <ResponsiveContainer width="100%" height={300}><PieChart>
-            <Pie data={topN(clientesFiltrados,8,'cliente')} cx="50%" cy="50%" outerRadius={110} dataKey="value" label={pieLabel}>
-              {topN(clientesFiltrados,8,'cliente').map((_,i)=><Cell key={i} fill={COLORS[i%COLORS.length]} />)}
-            </Pie><Tooltip contentStyle={tt} /><Legend />
-          </PieChart></ResponsiveContainer>
+      <SpaceBetween size="l">
+        {/* Tabela detalhada */}
+        <Container header={<Header variant="h3">Horas Contratadas vs Trabalhadas por Cliente</Header>}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid #e9ebed', background: '#f2f3f3' }}>
+                <th style={{ textAlign: 'left',   padding: '10px 16px', fontSize: 13, color: '#545b64', fontWeight: 600 }}>Cliente</th>
+                <th style={{ textAlign: 'left',   padding: '10px 12px', fontSize: 13, color: '#545b64', fontWeight: 600 }}>Equipe</th>
+                <th style={{ textAlign: 'center', padding: '10px 12px', fontSize: 13, color: '#545b64', fontWeight: 600 }}>Contrato</th>
+                <th style={{ textAlign: 'right',  padding: '10px 12px', fontSize: 13, color: '#545b64', fontWeight: 600 }}>Contratado/mês</th>
+                <th style={{ textAlign: 'right',  padding: '10px 12px', fontSize: 13, color: '#545b64', fontWeight: 600 }}>Previsto período</th>
+                <th style={{ textAlign: 'right',  padding: '10px 12px', fontSize: 13, color: '#545b64', fontWeight: 600 }}>Trabalhado</th>
+                <th style={{ textAlign: 'right',  padding: '10px 12px', fontSize: 13, color: '#545b64', fontWeight: 600 }}>%</th>
+                <th style={{ padding: '10px 12px', width: 140, fontSize: 13, color: '#545b64', fontWeight: 600 }}>Progresso</th>
+                <th style={{ textAlign: 'center', padding: '10px 12px', fontSize: 13, color: '#545b64', fontWeight: 600 }}>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(row => {
+                const cor = getStatusColor(row.pct, row.statusContrato);
+                const { type: stType, label: stLabel } = getStatusLabel(row.pct, row.statusContrato, row.horasTrabalhadas);
+                const isSusp = row.statusContrato === 'Suspenso';
+                const barW = Math.min(row.pct === 999 ? 100 : row.pct, 100);
+                return (
+                  <>
+                    <tr
+                      key={row.cliente}
+                      style={{ borderBottom: '1px solid #e9ebed', opacity: isSusp ? 0.55 : 1, cursor: row.colaboradores.length > 0 ? 'pointer' : 'default', background: expandedCliente === row.cliente ? '#f8f9fa' : 'transparent' }}
+                      onClick={() => row.colaboradores.length > 0 && setExpandedCliente(prev => prev === row.cliente ? null : row.cliente)}
+                    >
+                      <td style={{ padding: '9px 16px', fontSize: 13, fontWeight: 600 }}>
+                        {row.colaboradores.length > 0 && <span style={{ marginRight: 6, color: '#879596', fontSize: 11 }}>{expandedCliente === row.cliente ? '▼' : '▶'}</span>}
+                        {row.cliente}
+                      </td>
+                      <td style={{ padding: '9px 12px', fontSize: 12, color: '#5f6b7a' }}>{row.equipe}</td>
+                      <td style={{ padding: '9px 12px', textAlign: 'center' }}>
+                        <StatusIndicator type={row.statusContrato === 'Ativo' ? 'success' : row.statusContrato === 'Suspenso' ? 'stopped' : 'pending'}>
+                          {row.statusContrato}
+                        </StatusIndicator>
+                      </td>
+                      <td style={{ padding: '9px 12px', fontSize: 13, textAlign: 'right', color: '#5f6b7a' }}>
+                        {row.horasContratadas > 0 ? `${row.horasContratadas.toFixed(0)}h` : '—'}
+                      </td>
+                      <td style={{ padding: '9px 12px', fontSize: 13, textAlign: 'right', color: '#5f6b7a' }}>
+                        {row.horasContratadas_periodo > 0 ? `${row.horasContratadas_periodo.toFixed(1)}h` : '—'}
+                      </td>
+                      <td style={{ padding: '9px 12px', fontSize: 13, textAlign: 'right', fontWeight: 700, color: cor }}>
+                        {row.horasTrabalhadas.toFixed(1)}h
+                      </td>
+                      <td style={{ padding: '9px 12px', fontSize: 13, textAlign: 'right', fontWeight: 700, color: cor }}>
+                        {row.horasContratadas_periodo > 0 ? `${row.pct.toFixed(0)}%` : '—'}
+                      </td>
+                      <td style={{ padding: '9px 12px' }}>
+                        {row.horasContratadas_periodo > 0 && (
+                          <div style={{ background: '#e9ebed', borderRadius: 4, height: 10, overflow: 'hidden' }}>
+                            <div style={{ width: `${barW}%`, background: cor, height: '100%', borderRadius: 4, transition: 'width 0.3s' }} />
+                          </div>
+                        )}
+                      </td>
+                      <td style={{ padding: '9px 12px', textAlign: 'center' }}>
+                        <StatusIndicator type={stType}>{stLabel}</StatusIndicator>
+                      </td>
+                    </tr>
+                    {expandedCliente === row.cliente && row.colaboradores.map((col, i) => (
+                      <tr key={`${row.cliente}-col-${i}`} style={{ borderBottom: '1px solid #f2f3f3', background: '#f8f9fa' }}>
+                        <td style={{ padding: '6px 16px 6px 36px', fontSize: 12, color: '#0073bb' }}>{col.nome}</td>
+                        <td style={{ padding: '6px 12px', fontSize: 11, color: '#879596' }} colSpan={2}>{col.projetos.join(', ')}</td>
+                        <td colSpan={4} />
+                        <td style={{ padding: '6px 12px', fontSize: 12, textAlign: 'right', color: '#d45b07', fontWeight: 600 }}>{col.horas.toFixed(1)}h</td>
+                        <td />
+                      </tr>
+                    ))}
+                  </>
+                );
+              })}
+            </tbody>
+          </table>
         </Container>
-      )}
-
-      <Table
-        columnDefinitions={[
-          {
-            id: 'expand',
-            header: '',
-            cell: (item: CliRow) => {
-              if (item._type === 'child') return '';
-              const isExp = expandedCliente === item.parentCliente;
-              return <Button variant="inline-icon" iconName={isExp ? 'treeview-collapse' : 'treeview-expand'} onClick={() => setExpandedCliente(isExp ? null : item.parentCliente!)} />;
-            },
-            width: 50,
-          },
-          {
-            id: 'cliente',
-            header: 'Cliente',
-            cell: (item: CliRow) => item._type === 'child'
-              ? <Box color="text-status-info" fontSize="body-s" padding={{ left: 'l' }}>{item.cliente}</Box>
-              : <Box fontWeight="bold">{item.cliente}</Box>,
-          },
-          {
-            id: 'horas',
-            header: 'Total Horas',
-            cell: (item: CliRow) => item._type === 'child'
-              ? <Box fontSize="body-s" color="text-status-warning">{item.horas}</Box>
-              : item.horas,
-          },
-          {
-            id: 'tipo',
-            header: 'Tipo / Projetos',
-            cell: (item: CliRow) => {
-              if (item._type === 'child') return <Box fontSize="body-s" color="text-status-inactive">{item.tipoOuProjetos}</Box>;
-              const isBillable = item.tipoOuProjetos === 'Billable';
-              return isBillable
-                ? <StatusIndicator type="success">Billable</StatusIndicator>
-                : <StatusIndicator type="error">Non-Billable</StatusIndicator>;
-            },
-          },
-        ]}
-        items={rows}
-        trackBy="_key"
-        variant="container"
-        empty={<Box textAlign="center" color="text-status-inactive">Nenhum cliente encontrado</Box>}
-      />
-    </SpaceBetween>
-  );
+      </SpaceBetween>
+    );
   };
 
+
+  const renderTickets = () => {
+    if (loadingTickets) return (
+      <Box textAlign="center" padding="l"><Spinner size="large" /></Box>
+    );
+    if (ticketsAWS.length === 0) return (
+      <Box textAlign="center" color="text-status-inactive">Nenhum ticket encontrado para o projeto AWS.</Box>
+    );
+
+    const orgsFiltradas = filtroOrg.trim()
+      ? ticketsAWS.filter(o => o.organization.toLowerCase().includes(filtroOrg.trim().toLowerCase()))
+      : ticketsAWS;
+
+    const totalTickets = ticketsAWS.reduce((s, o) => s + o.total, 0);
+    const totalFiltrado = orgsFiltradas.reduce((s, o) => s + o.total, 0);
+
+    const getPriorityColor = (priority: string) => {
+      switch (priority?.toLowerCase()) {
+        case 'highest': case 'critical': return '#d13212';
+        case 'high': return '#f89256';
+        case 'medium': return '#f0ab00';
+        case 'low': return '#037f0c';
+        default: return '#879596';
+      }
+    };
+
+    const getStatusType = (status: string): 'success' | 'pending' | 'in-progress' | 'stopped' | 'info' => {
+      const s = status?.toLowerCase() || '';
+      if (s.includes('done') || s.includes('closed') || s.includes('resolved')) return 'success';
+      if (s.includes('progress') || s.includes('doing')) return 'in-progress';
+      if (s.includes('open') || s.includes('todo') || s.includes('to do')) return 'pending';
+      if (s.includes('cancel') || s.includes('won')) return 'stopped';
+      return 'info';
+    };
+
+    return (
+      <SpaceBetween size="l">
+        {/* Cabeçalho com totais e filtro */}
+        <Container>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
+            <div>
+              <Box variant="awsui-key-label">Total de Tickets</Box>
+              <Box variant="awsui-value-large">{totalTickets}</Box>
+            </div>
+            <div>
+              <Box variant="awsui-key-label">Organizations</Box>
+              <Box variant="awsui-value-large">{ticketsAWS.length}</Box>
+            </div>
+            <div style={{ flex: 1, minWidth: 260 }}>
+              <Box variant="awsui-key-label">Filtrar por Organization</Box>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                <input
+                  type="text"
+                  value={filtroOrg}
+                  onChange={e => {
+                    setFiltroOrg(e.target.value);
+                    setExpandedOrg(null);
+                  }}
+                  placeholder="Digite o nome da organization..."
+                  style={{
+                    flex: 1,
+                    padding: '7px 12px',
+                    fontSize: 13,
+                    border: '1px solid #aab7b8',
+                    borderRadius: 4,
+                    outline: 'none',
+                    background: '#fff',
+                    color: '#16191f',
+                  }}
+                />
+                {filtroOrg && (
+                  <button
+                    onClick={() => { setFiltroOrg(''); setExpandedOrg(null); }}
+                    style={{ padding: '6px 12px', fontSize: 12, border: '1px solid #aab7b8', borderRadius: 4, background: '#f2f3f3', cursor: 'pointer', color: '#545b64' }}
+                  >
+                    Limpar
+                  </button>
+                )}
+              </div>
+              {filtroOrg && (
+                <Box color="text-status-inactive" fontSize="body-s">
+                  {orgsFiltradas.length} organization{orgsFiltradas.length !== 1 ? 's' : ''} · {totalFiltrado} ticket{totalFiltrado !== 1 ? 's' : ''}
+                </Box>
+              )}
+            </div>
+          </div>
+        </Container>
+
+        {orgsFiltradas.length === 0 && (
+          <Box textAlign="center" color="text-status-inactive">
+            Nenhuma organization encontrada para "{filtroOrg}".
+          </Box>
+        )}
+
+        {orgsFiltradas.map(orgData => (
+          <Container
+            key={orgData.organization}
+            header={
+              <Header
+                variant="h3"
+                counter={`(${orgData.total})`}
+                actions={
+                  <Button
+                    variant="link"
+                    onClick={() => setExpandedOrg(prev => prev === orgData.organization ? null : orgData.organization)}
+                  >
+                    {expandedOrg === orgData.organization ? 'Recolher' : 'Expandir'}
+                  </Button>
+                }
+              >
+                {orgData.organization}
+              </Header>
+            }
+          >
+            {expandedOrg === orgData.organization && (
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid #e9ebed', background: '#f2f3f3' }}>
+                    <th style={{ textAlign: 'left', padding: '8px 12px', fontSize: 12, color: '#545b64', fontWeight: 600 }}>Key</th>
+                    <th style={{ textAlign: 'left', padding: '8px 12px', fontSize: 12, color: '#545b64', fontWeight: 600 }}>Resumo</th>
+                    <th style={{ textAlign: 'left', padding: '8px 12px', fontSize: 12, color: '#545b64', fontWeight: 600 }}>Tipo</th>
+                    <th style={{ textAlign: 'left', padding: '8px 12px', fontSize: 12, color: '#545b64', fontWeight: 600 }}>Status</th>
+                    <th style={{ textAlign: 'left', padding: '8px 12px', fontSize: 12, color: '#545b64', fontWeight: 600 }}>Prioridade</th>
+                    <th style={{ textAlign: 'left', padding: '8px 12px', fontSize: 12, color: '#545b64', fontWeight: 600 }}>Responsável</th>
+                    <th style={{ textAlign: 'left', padding: '8px 12px', fontSize: 12, color: '#545b64', fontWeight: 600 }}>Criado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orgData.tickets.map((ticket: TicketAWS) => (
+                    <tr key={ticket.key} style={{ borderBottom: '1px solid #e9ebed' }}>
+                      <td style={{ padding: '7px 12px', fontSize: 12, fontWeight: 600, color: '#0073bb', whiteSpace: 'nowrap' }}>{ticket.key}</td>
+                      <td style={{ padding: '7px 12px', fontSize: 12, maxWidth: 400 }}>{ticket.summary}</td>
+                      <td style={{ padding: '7px 12px', fontSize: 11, color: '#5f6b7a' }}>{ticket.issue_type}</td>
+                      <td style={{ padding: '7px 12px', fontSize: 12 }}>
+                        <StatusIndicator type={getStatusType(ticket.status)}>{ticket.status}</StatusIndicator>
+                      </td>
+                      <td style={{ padding: '7px 12px', fontSize: 12, color: getPriorityColor(ticket.priority), fontWeight: 600 }}>{ticket.priority || '—'}</td>
+                      <td style={{ padding: '7px 12px', fontSize: 12, color: '#5f6b7a' }}>{ticket.assignee}</td>
+                      <td style={{ padding: '7px 12px', fontSize: 11, color: '#879596', whiteSpace: 'nowrap' }}>
+                        {ticket.created ? new Date(ticket.created).toLocaleDateString('pt-BR') : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            {expandedOrg !== orgData.organization && (
+              <Box color="text-status-inactive" fontSize="body-s">
+                {orgData.total} ticket{orgData.total !== 1 ? 's' : ''} — clique em Expandir para ver detalhes
+              </Box>
+            )}
+          </Container>
+        ))}
+      </SpaceBetween>
+    );
+  };
   return (
     <AppLayout
       toolsHide={true}
@@ -599,7 +817,7 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
                     placeholder="YYYY-MM-DD"
                   />
                 </FormField>
-                <Button variant="primary" onClick={buscar} loading={loading}>
+                <Button variant="primary" onClick={() => { buscar(); buscarTickets(); }} loading={loading}>
                   Buscar
                 </Button>
               </SpaceBetween>
@@ -613,18 +831,19 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
 
             {!loading && (<>
               <div style={{ display: 'flex', gap: 0, borderBottom: '2px solid #e9ebed', marginBottom: 16 }}>
-                {(['resumo','projetos','clientes','capacity'] as const).map(t => (
+                {(['resumo','projetos','clientes','tickets','capacity'] as const).map(t => (
                   <button key={t} onClick={() => setTab(t)} style={{
                     padding: '10px 20px', background: 'none', border: 'none',
                     color: tab === t ? '#0073bb' : '#545b64',
                     borderBottom: tab === t ? '3px solid #0073bb' : '3px solid transparent',
                     fontWeight: tab === t ? 700 : 400, cursor: 'pointer', fontSize: 14, textTransform: 'capitalize',
-                  }}>{t === 'clientes' ? 'MSP' : t}</button>
+                  }}>{t === 'clientes' ? 'MSP' : t === 'tickets' ? 'Tickets' : t}</button>
                 ))}
               </div>
               {tab === 'resumo' && renderResumo()}
               {tab === 'projetos' && renderProjetos()}
               {tab === 'clientes' && renderClientes()}
+              {tab === 'tickets' && renderTickets()}
               {tab === 'capacity' && <Capacity dataInicio={dataInicio} dataFim={dataFim} />}
             </>
             )}
@@ -634,3 +853,4 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
     />
   );
 }
+

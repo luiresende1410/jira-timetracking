@@ -1,4 +1,4 @@
-services:
+﻿services:
   backend:
     build: ./backend
     container_name: timetracking-backend
@@ -6,6 +6,7 @@ services:
       - ./backend/.env
     volumes:
       - ./backend/colaboradores.json:/app/colaboradores.json
+      - ./backend/clientes_msp.json:/app/clientes_msp.json
     expose:
       - "8000"
     restart: unless-stopped

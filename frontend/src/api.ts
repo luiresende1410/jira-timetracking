@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   ConfiguracaoJira,
   RelatorioColaborador,
   RelatorioProjeto,
@@ -111,5 +111,62 @@ export async function getPerfis() {
 export async function getCapacity(dataInicio: string, dataFim: string) {
   return request<CapacityResponse>(
     API + '/capacity?' + qs({ data_inicio: dataInicio, data_fim: dataFim })
+  );
+}
+
+// ===== Tickets AWS =====
+
+export interface TicketAWS {
+  key: string;
+  summary: string;
+  status: string;
+  issue_type: string;
+  organization: string;
+  assignee: string;
+  priority: string;
+  created: string;
+  updated: string;
+}
+
+export interface OrgTickets {
+  organization: string;
+  tickets: TicketAWS[];
+  total: number;
+}
+
+export interface TicketsAWSResponse {
+  total: number;
+  por_organization: OrgTickets[];
+}
+
+export async function getTicketsAWS(dataInicio: string, dataFim: string) {
+  return request<TicketsAWSResponse>(
+    API + '/tickets/aws?' + qs({ data_inicio: dataInicio, data_fim: dataFim })
+  );
+}
+
+// ===== Clientes MSP =====
+
+export interface ClienteMSP {
+  horas: number;
+  equipe: string;
+  status: 'Ativo' | 'Suspenso';
+}
+
+export async function getClientesMSP() {
+  return request<Record<string, ClienteMSP>>(API + '/clientes-msp');
+}
+
+export async function putClienteMSP(nome: string, dados: ClienteMSP) {
+  return request<ClienteMSP>(
+    API + '/clientes-msp/' + encodeURIComponent(nome),
+    { method: 'PUT', body: JSON.stringify(dados) }
+  );
+}
+
+export async function deleteClienteMSP(nome: string) {
+  return request<{ status: string }>(
+    API + '/clientes-msp/' + encodeURIComponent(nome),
+    { method: 'DELETE' }
   );
 }

@@ -1,4 +1,5 @@
-import os
+﻿import osimport json
+
 import logging
 from pydantic import BaseModel
 from fastapi import FastAPI, HTTPException, Query
@@ -217,6 +218,96 @@ async def get_capacity(
     return calcular_capacity(data_inicio, data_fim)
 
 
+
+@app.get("/api/tickets/aws")
+async def tickets_aws(
+    data_inicio: date = Query(...),
+    data_fim: date = Query(...),
+):
+    servico = _get_servico()
+    try:
+        raw_issues = await servico.cliente.buscar_issues_projeto(
+            project_key="AWS",
+        )
+    except JiraApiError as e:
+        raise HTTPException(status_code=e.status_code or 500, detail=e.message)
+
+    tickets = []
+    for issue in raw_issues:
+        fields = issue.get("fields", {})
+        orgs = fields.get("customfield_10002") or []
+        org_name = orgs[0].get("name", "Sem Organization") if orgs else "Sem Organization"
+        assignee = fields.get("assignee") or {}
+        tickets.append({
+            "key": issue.get("key", ""),
+            "summary": fields.get("summary", ""),
+            "status": (fields.get("status") or {}).get("name", ""),
+            "issue_type": (fields.get("issuetype") or {}).get("name", ""),
+            "organization": org_name,
+            "assignee": assignee.get("displayName", "Sem responsavel"),
+            "priority": (fields.get("priority") or {}).get("name", ""),
+            "created": fields.get("created", ""),
+            "updated": fields.get("updated", ""),
+        })
+
+    # Agrupar por organization
+    por_org: dict = {}
+    for t in tickets:
+        org = t["organization"]
+        if org not in por_org:
+            por_org[org] = []
+        por_org[org].append(t)
+
+    return {
+        "total": len(tickets),
+        "por_organization": [
+            {"organization": org, "tickets": ts, "total": len(ts)}
+            for org, ts in sorted(por_org.items())
+        ],
+    }
+
+# ===== Endpoints de Clientes MSP =====
+
+_CLIENTES_MSP_PATH = os.path.join(os.path.dirname(__file__), "..", "clientes_msp.json")
+
+def _carregar_clientes_msp() -> dict:
+    if not os.path.exists(_CLIENTES_MSP_PATH):
+        return {}
+    with open(_CLIENTES_MSP_PATH, "r", encoding="utf-8-sig") as f:
+        return json.load(f)
+
+def _salvar_clientes_msp(data: dict) -> None:
+    with open(_CLIENTES_MSP_PATH, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+class ClienteMSPUpdate(BaseModel):
+    horas: float
+    equipe: str
+    status: str  # "Ativo" ou "Suspenso"
+
+
+@app.get("/api/clientes-msp")
+async def get_clientes_msp():
+    return _carregar_clientes_msp()
+
+
+@app.put("/api/clientes-msp/{nome}")
+async def put_cliente_msp(nome: str, body: ClienteMSPUpdate):
+    data = _carregar_clientes_msp()
+    data[nome] = {"horas": body.horas, "equipe": body.equipe, "status": body.status}
+    _salvar_clientes_msp(data)
+    return data[nome]
+
+
+@app.delete("/api/clientes-msp/{nome}")
+async def delete_cliente_msp(nome: str):
+    data = _carregar_clientes_msp()
+    if nome in data:
+        del data[nome]
+        _salvar_clientes_msp(data)
+        return {"status": "removido"}
+    raise HTTPException(status_code=404, detail="Cliente nao encontrado")
 @app.on_event("shutdown")
 async def shutdown():
     if _cliente:

@@ -1,4 +1,4 @@
-import httpx
+﻿import httpx
 import asyncio
 from base64 import b64encode
 from datetime import datetime
@@ -125,6 +125,39 @@ class ClienteApiJira:
         except JiraApiError:
             return None
 
+
+    async def buscar_issues_projeto(
+        self,
+        project_key: str,
+        max_results: int = 2000,
+    ) -> list:
+        """Busca todas as issues de um projeto via JQL com paginacao (nextPageToken)."""
+        jql = f"project = {project_key} ORDER BY updated DESC"
+
+        issues = []
+        page_size = 100
+        next_page_token = None
+
+        while len(issues) < max_results:
+            params = {
+                "jql": jql,
+                "maxResults": page_size,
+                "fields": "summary,status,issuetype,customfield_10002,assignee,created,updated,priority",
+            }
+            if next_page_token:
+                params["nextPageToken"] = next_page_token
+
+            data = await self._request("GET", "/rest/api/3/search/jql", params=params)
+            batch = data.get("issues", [])
+            issues.extend(batch)
+
+            if data.get("isLast", True) or not batch:
+                break
+            next_page_token = data.get("nextPageToken")
+            if not next_page_token:
+                break
+
+        return issues
     async def buscar_issue(self, issue_id: str) -> Optional[Issue]:
         try:
             data = await self._request(
@@ -147,3 +180,4 @@ class ClienteApiJira:
             )
         except JiraApiError:
             return None
+
