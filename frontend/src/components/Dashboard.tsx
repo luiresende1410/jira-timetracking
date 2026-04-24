@@ -97,7 +97,7 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
   const [expandedOrg, setExpandedOrg] = useState<string | null>(null);
   const [filtroOrg, setFiltroOrg] = useState('');
   const [filtroMSP, setFiltroMSP] = useState('');
-  const [filtroStatusMSP, setFiltroStatusMSP] = useState<Set<string>>(new Set(['Ativo', 'Suspenso', 'Sem contrato']));
+  const [filtroStatusMSP, setFiltroStatusMSP] = useState<Set<string>>(new Set());
   const [filtroStatusTickets, setFiltroStatusTickets] = useState<Set<string>>(new Set());
   const [mspCapacity, setMspCapacity] = useState<Record<string, ClienteMSP>>({});
 
@@ -515,10 +515,12 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
       };
     }).sort((a, b) => a.cliente.localeCompare(b.cliente));
 
-    // Filtrar rows pelo texto digitado
-    const rowsFiltrados = filtroMSP.trim()
-      ? rows.filter(r => r.cliente.toLowerCase().includes(filtroMSP.trim().toLowerCase()))
-      : rows;
+    // Filtrar rows pelo texto digitado e por status
+    const rowsFiltrados = rows.filter(r => {
+      const textoOk = !filtroMSP.trim() || r.cliente.toLowerCase().includes(filtroMSP.trim().toLowerCase());
+      const statusOk = filtroStatusMSP.size === 0 || !filtroStatusMSP.has(r.statusContrato);
+      return textoOk && statusOk;
+    });
 
     // Totais por equipe
     const getStatusColor = (pct: number, status: string) => {
@@ -542,33 +544,16 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
         {/* Filtros MSP */}
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 24, flexWrap: 'wrap' }}>
           {/* Filtro por status */}
-          <div>
-            <Box variant="awsui-key-label">Status do contrato</Box>
-            <div style={{ display: 'flex', gap: 12, marginTop: 6 }}>
-              {(['Ativo', 'Suspenso', 'Sem contrato'] as const).map(s => (
-                <label key={s} style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', fontSize: 13, color: '#16191f' }}>
-                  <input
-                    type="checkbox"
-                    checked={filtroStatusMSP.has(s)}
-                    onChange={() => {
-                      setFiltroStatusMSP(prev => {
-                        const next = new Set(prev);
-                        if (next.has(s)) next.delete(s); else next.add(s);
-                        return next;
-                      });
-                      setExpandedCliente(null);
-                    }}
-                    style={{ accentColor: '#0073bb', width: 15, height: 15 }}
-                  />
-                  {s}
-                </label>
-              ))}
-            </div>
+          <div style={{ minWidth: 220 }}>
+            <MultiFilter
+              label="Status do contrato"
+              options={['Ativo', 'Suspenso', 'Sem contrato']}
+              excluded={filtroStatusMSP}
+              onChange={excl => { setFiltroStatusMSP(excl); setExpandedCliente(null); }}
+            />
           </div>
           {/* Filtro por nome */}
           <div style={{ flex: 1, minWidth: 260 }}>
-            <Box variant="awsui-key-label">Filtrar por cliente</Box>
-            <Box variant="awsui-key-label">Filtrar por cliente</Box>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
               <input
                 type="text"
@@ -698,13 +683,13 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
       ticketsAWS.flatMap(o => o.tickets.map((t: TicketAWS) => t.status)).filter(Boolean)
     )).sort();
 
-    // Inicializar filtroStatusTickets com todos os status se ainda vazio
-    const statusAtivos = filtroStatusTickets.size === 0 ? new Set(todosStatusTickets) : filtroStatusTickets;
+    // filtroStatusTickets = set de status EXCLUÍDOS (semântica MultiFilter)
+    const statusAtivos = (s: string) => filtroStatusTickets.size === 0 || !filtroStatusTickets.has(s);
 
     const orgsFiltradas = ticketsAWS
       .map(o => ({
         ...o,
-        tickets: o.tickets.filter((t: TicketAWS) => statusAtivos.has(t.status)),
+        tickets: o.tickets.filter((t: TicketAWS) => statusAtivos(t.status)),
       }))
       .filter(o => {
         const orgOk = !filtroOrg.trim() || o.organization.toLowerCase().includes(filtroOrg.trim().toLowerCase());
@@ -785,33 +770,13 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
               )}
             </div>
             {/* Filtro por status */}
-            <div style={{ minWidth: 300 }}>
-              <Box variant="awsui-key-label">Filtrar por Status</Box>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
-                {todosStatusTickets.map(s => (
-                  <label key={s} style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', fontSize: 12, color: '#16191f', background: '#f2f3f3', padding: '4px 10px', borderRadius: 12, border: statusAtivos.has(s) ? '1.5px solid #0073bb' : '1.5px solid #aab7b8' }}>
-                    <input
-                      type="checkbox"
-                      checked={statusAtivos.has(s)}
-                      onChange={() => {
-                        setFiltroStatusTickets(prev => {
-                          const base = prev.size === 0 ? new Set(todosStatusTickets) : new Set(prev);
-                          if (base.has(s)) base.delete(s); else base.add(s);
-                          return base;
-                        });
-                        setExpandedOrg(null);
-                      }}
-                      style={{ accentColor: '#0073bb', width: 13, height: 13 }}
-                    />
-                    {s}
-                  </label>
-                ))}
-                {filtroStatusTickets.size > 0 && filtroStatusTickets.size < todosStatusTickets.length && (
-                  <button onClick={() => setFiltroStatusTickets(new Set())} style={{ fontSize: 11, padding: '3px 8px', border: '1px solid #aab7b8', borderRadius: 10, background: '#fff', cursor: 'pointer', color: '#545b64' }}>
-                    Limpar filtro
-                  </button>
-                )}
-              </div>
+            <div style={{ minWidth: 260 }}>
+              <MultiFilter
+                label="Status"
+                options={todosStatusTickets}
+                excluded={filtroStatusTickets}
+                onChange={excl => { setFiltroStatusTickets(excl); setExpandedOrg(null); }}
+              />
             </div>
           </div>
         </Container>
