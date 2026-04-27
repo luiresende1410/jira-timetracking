@@ -4,7 +4,6 @@ import { getRelatorioCompleto, getTicketsAWS, getClientesMSP, type CapacityVsRea
 import { exportCSV, exportExcel } from '../export';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell,
 } from 'recharts';
 import type {
   RelatorioColaborador,
@@ -49,18 +48,8 @@ function useSortable<T>(items: T[], defaultKey: keyof T, defaultDir: SortDir = '
   return { sorted, toggle, sortKey, sortDir };
 }
 
-const COLORS = ['#FF6B00','#FF8C38','#FFB070','#4ECDC4','#45B7D1','#96CEB4','#FFEAA7','#DDA0DD','#98D8C8','#F7DC6F'];
 const tt: React.CSSProperties = {background:'#16213e',border:'1px solid #333',borderRadius:6};
 
-type PI = { name: string; value: number };
-function topN<T extends { total_horas: number }>(items: T[], n: number, nk: keyof T): PI[] {
-  const s = [...items].sort((a, b) => b.total_horas - a.total_horas);
-  const r: PI[] = s.slice(0, n).map(i => ({ name: String(i[nk]), value: i.total_horas }));
-  const rest = s.slice(n);
-  if (rest.length > 0) r.push({ name: 'Outros', value: rest.reduce((a, i) => a + i.total_horas, 0) });
-  return r;
-}
-const pieLabel = ({ name, percent }: { name?: string; percent?: number }) => `${(name ?? '').substring(0, 15)} ${((percent ?? 0) * 100).toFixed(0)}%`;
 
 function getMesCorrente(): { inicio: string; fim: string } {
   const now = new Date();
@@ -213,24 +202,6 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
           </Container>
         )}
 
-        {projetos.length > 0 && (
-          <ColumnLayout columns={2}>
-            <Container header={<Header variant="h3">Distribuição por Projeto</Header>}>
-              <ResponsiveContainer width="100%" height={300}><PieChart>
-                <Pie data={topN(projetos,8,'projeto_key')} cx="50%" cy="50%" outerRadius={95} dataKey="value" label={pieLabel}>
-                  {topN(projetos,8,'projeto_key').map((_,i)=><Cell key={i} fill={COLORS[i%COLORS.length]} />)}
-                </Pie><Tooltip contentStyle={tt} />
-              </PieChart></ResponsiveContainer>
-            </Container>
-            <Container header={<Header variant="h3">Distribuição por Cliente</Header>}>
-              <ResponsiveContainer width="100%" height={300}><PieChart>
-                <Pie data={topN(clientes,8,'cliente')} cx="50%" cy="50%" outerRadius={95} dataKey="value" label={pieLabel}>
-                  {topN(clientes,8,'cliente').map((_,i)=><Cell key={i} fill={COLORS[i%COLORS.length]} />)}
-                </Pie><Tooltip contentStyle={tt} />
-              </PieChart></ResponsiveContainer>
-            </Container>
-          </ColumnLayout>
-        )}
 
         {capacityVsReal.length > 0 && (() => {
           // Agrupar por time
@@ -267,7 +238,7 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
                   {times.map(([time, v]) => {
                     const diff = v.realizado - v.provisionado;
                     const pct = v.provisionado > 0 ? (v.realizado / v.provisionado) * 100 : 0;
-                    const barColor = pct >= 90 ? "#037f0c" : pct >= 70 ? "#f89256" : "#d13212";
+                    const barColor = pct >= 80 ? "#037f0c" : pct >= 60 ? "#f89256" : "#d13212";
                     const barWidth = Math.min(pct, 100);
                     return (
                       <tr key={time} style={{ borderBottom: "1px solid #e9ebed" }}>
@@ -297,12 +268,12 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
                     <td style={{ padding: "10px 16px", fontSize: 13, textAlign: "right", fontWeight: 700, color: (totalReal - totalProv) >= 0 ? "#037f0c" : "#d13212" }}>
                       {(totalReal - totalProv) > 0 ? "+" : ""}{(totalReal - totalProv).toFixed(1)}h
                     </td>
-                    <td style={{ padding: "10px 16px", fontSize: 13, textAlign: "right", fontWeight: 700, color: totalProv > 0 && (totalReal/totalProv*100) >= 90 ? "#037f0c" : "#d13212" }}>
+                    <td style={{ padding: "10px 16px", fontSize: 13, textAlign: "right", fontWeight: 700, color: totalProv > 0 && (totalReal/totalProv*100) >= 80 ? "#037f0c" : "#d13212" }}>
                       {totalProv > 0 ? (totalReal / totalProv * 100).toFixed(0) : 0}%
                     </td>
                     <td style={{ padding: "10px 12px" }}>
                       <div style={{ background: "#e9ebed", borderRadius: 4, height: 12, overflow: "hidden" }}>
-                        <div style={{ width: `${Math.min(totalProv > 0 ? (totalReal/totalProv*100) : 0, 100)}%`, background: totalProv > 0 && (totalReal/totalProv*100) >= 90 ? "#037f0c" : "#d13212", height: "100%", borderRadius: 4 }} />
+                        <div style={{ width: `${Math.min(totalProv > 0 ? (totalReal/totalProv*100) : 0, 100)}%`, background: totalProv > 0 && (totalReal/totalProv*100) >= 80 ? "#037f0c" : "#d13212", height: "100%", borderRadius: 4 }} />
                       </div>
                     </td>
                   </tr>
@@ -360,17 +331,6 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
           <MultiFilter label="Filtrar Projetos" options={projetos.map(p => p.projeto_key)} excluded={exclProjetos} onChange={setExclProjetos} />
           {exclProjetos.size > 0 && <Box color="text-status-inactive" fontSize="body-s">{projetosFiltrados.reduce((s, p) => s + p.total_horas, 0).toFixed(1)}h total filtrado</Box>}
         </SpaceBetween>
-      )}
-
-      {projetos.length > 0 && (
-        <Container>
-          <ResponsiveContainer width="100%" height={Math.max(200, ps.sorted.length * 30)}>
-            <BarChart data={ps.sorted.map(p=>({nome:p.projeto_key,horas:p.total_horas}))} layout="vertical">
-              <XAxis type="number" tick={{fill:'#aaa',fontSize:11}} /><YAxis type="category" dataKey="nome" tick={{fill:'#aaa',fontSize:11}} width={80} />
-              <Tooltip contentStyle={tt} /><Bar dataKey="horas" fill="#4ECDC4" radius={[0,4,4,0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </Container>
       )}
 
       <Container>
@@ -1023,6 +983,7 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
     />
   );
 }
+
 
 
 
