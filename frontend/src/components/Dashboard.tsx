@@ -99,6 +99,16 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
   const [filtroMSP, setFiltroMSP] = useState('');
   const [filtroStatusMSP, setFiltroStatusMSP] = useState<Set<string>>(new Set());
   const [filtroStatusTickets, setFiltroStatusTickets] = useState<Set<string>>(new Set());
+  const [evolucaoProjetos, setEvolucaoProjetos] = useState<Record<string, number>>(() => {
+    try { return JSON.parse(localStorage.getItem('evolucao_projetos') || '{}'); } catch { return {}; }
+  });
+  const setEvolucao = (key: string, val: number) => {
+    setEvolucaoProjetos(prev => {
+      const next = { ...prev, [key]: val };
+      localStorage.setItem('evolucao_projetos', JSON.stringify(next));
+      return next;
+    });
+  };
   const [mspCapacity, setMspCapacity] = useState<Record<string, ClienteMSP>>({});
 
   const MSP_PROJETO = 'CloudDog - Suporte SRE';
@@ -421,6 +431,7 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
               <th style={{ textAlign: "left", padding: "12px 16px", fontSize: 14, color: "#545b64" }}>Key / %</th>
               <th style={{ textAlign: "left", padding: "12px 16px", fontSize: 14, color: "#545b64" }}>Tipos de Issue</th>
               <th style={{ textAlign: "right", padding: "12px 16px", fontSize: 14, color: "#545b64" }}>Total Horas</th>
+              <th style={{ textAlign: "center", padding: "12px 16px", fontSize: 14, color: "#545b64", width: 180 }}>Evolução</th>
             </tr>
           </thead>
           <tbody>
@@ -458,6 +469,40 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
                   <td style={{ padding: "8px 16px", fontSize: 13, textAlign: "right", fontWeight: row._type === 'parent' ? 600 : 400, color: row._type === 'parent' ? "#16191f" : "#d45b07" }}>
                     {row.col4}
                   </td>
+                  {row._type === 'parent' ? (
+                    <td style={{ padding: '8px 16px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <input
+                          type="number"
+                          min={0}
+                          max={100}
+                          value={evolucaoProjetos[row._key] ?? ''}
+                          onChange={e => {
+                            const v = Math.min(100, Math.max(0, Number(e.target.value)));
+                            setEvolucao(row._key, v);
+                          }}
+                          placeholder="0"
+                          style={{
+                            width: 52, padding: '4px 6px', fontSize: 13, textAlign: 'right',
+                            border: '1px solid #aab7b8', borderRadius: 4, outline: 'none',
+                            background: '#fff', color: '#16191f',
+                          }}
+                        />
+                        <span style={{ fontSize: 12, color: '#5f6b7a' }}>%</span>
+                        <div style={{ flex: 1, background: '#e9ebed', borderRadius: 4, height: 8, overflow: 'hidden', minWidth: 60 }}>
+                          <div style={{
+                            width: `${evolucaoProjetos[row._key] ?? 0}%`,
+                            height: '100%', borderRadius: 4, transition: 'width 0.3s',
+                            background: (evolucaoProjetos[row._key] ?? 0) >= 100 ? '#037f0c'
+                              : (evolucaoProjetos[row._key] ?? 0) >= 70 ? '#0073bb'
+                              : (evolucaoProjetos[row._key] ?? 0) >= 40 ? '#f0ab00' : '#d13212',
+                          }} />
+                        </div>
+                      </div>
+                    </td>
+                  ) : (
+                    <td />
+                  )}
                 </tr>
               );
             })}
