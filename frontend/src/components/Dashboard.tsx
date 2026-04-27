@@ -340,7 +340,6 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
               <th style={{ width: 40, padding: "12px 8px" }} />
               <th style={{ textAlign: "left", padding: "12px 16px", fontSize: 14, color: "#545b64" }}>Projeto</th>
               <th style={{ textAlign: "left", padding: "12px 16px", fontSize: 14, color: "#545b64" }}>Key / %</th>
-              <th style={{ textAlign: "left", padding: "12px 16px", fontSize: 14, color: "#545b64" }}>Tipos de Issue</th>
               <th style={{ textAlign: 'center', padding: '12px 12px', fontSize: 13, color: '#545b64', width: 200 }}>Horas Vendidas / Valor hora</th>
               <th style={{ textAlign: "right", padding: "12px 16px", fontSize: 14, color: "#545b64" }}>Horas Trabalhadas</th>
               <th style={{ textAlign: 'center', padding: '12px 12px', fontSize: 13, color: '#545b64', width: 200 }}>Evolução</th>
@@ -373,9 +372,6 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
                       {p.projeto_nome}
                     </td>
                     <td style={{ padding: "8px 16px", fontSize: 12, color: "#5f6b7a" }}>{p.projeto_key}</td>
-                    <td style={{ padding: "8px 16px", fontSize: 12, color: "#5f6b7a" }}>
-                      {p.horas_por_tipo?.map(t => `${t.issue_type}: h`).join(' | ') || ''}
-                    </td>
                     {/* Horas Vendidas / Valor hora */}
                     <td style={{ padding: '8px 12px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
@@ -447,7 +443,7 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
                   {/* Painel expandido: atividades por colaborador */}
                   {isExpanded && (
                     <tr key={`${p.projeto_key}-expand`} style={{ borderBottom: '2px solid #e9ebed' }}>
-                      <td colSpan={8} style={{ padding: 0, background: '#f8f9fa' }}>
+                      <td colSpan={7} style={{ padding: 0, background: '#f8f9fa' }}>
                         <div style={{ padding: '16px 24px 20px 48px' }}>
                           {colabsComAtividades.length === 0 ? (
                             <Box color="text-status-inactive" fontSize="body-s">Nenhuma atividade encontrada para este projeto.</Box>
