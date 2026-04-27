@@ -440,9 +440,9 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
               <th style={{ textAlign: "left", padding: "12px 16px", fontSize: 14, color: "#545b64" }}>Projeto</th>
               <th style={{ textAlign: "left", padding: "12px 16px", fontSize: 14, color: "#545b64" }}>Key / %</th>
               <th style={{ textAlign: "left", padding: "12px 16px", fontSize: 14, color: "#545b64" }}>Tipos de Issue</th>
-              <th style={{ textAlign: "right", padding: "12px 16px", fontSize: 14, color: "#545b64" }}>Total Horas</th>
-              <th style={{ textAlign: 'center', padding: '12px 12px', fontSize: 13, color: '#545b64', width: 200 }}>Evolução</th>
               <th style={{ textAlign: 'center', padding: '12px 12px', fontSize: 13, color: '#545b64', width: 200 }}>Horas Vendidas / Valor hora</th>
+              <th style={{ textAlign: "right", padding: "12px 16px", fontSize: 14, color: "#545b64" }}>Horas Trabalhadas</th>
+              <th style={{ textAlign: 'center', padding: '12px 12px', fontSize: 13, color: '#545b64', width: 200 }}>Evolução</th>
               <th style={{ textAlign: 'right', padding: '12px 16px', fontSize: 13, color: '#545b64', width: 160 }}>Valor Agregado</th>
             </tr>
           </thead>
@@ -478,11 +478,39 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
                   </td>
                   <td style={{ padding: "8px 16px", fontSize: 12, color: "#5f6b7a" }}>{row.col2}</td>
                   <td style={{ padding: "8px 16px", fontSize: 12, color: "#5f6b7a" }}>{row.col3}</td>
-                  <td style={{ padding: "8px 16px", fontSize: 13, textAlign: "right", fontWeight: row._type === 'parent' ? 600 : 400, color: row._type === 'parent' ? "#16191f" : "#d45b07" }}>
+                  {/* Horas Vendidas / Valor hora */}
+                  {row._type === 'parent' ? (
+                    <td style={{ padding: '8px 12px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <input
+                            type="number" min={0}
+                            value={dadosFinanceiros[row._key]?.horasVendidas ?? ''}
+                            onChange={e => setFinanceiro(row._key, 'horasVendidas', Math.max(0, Number(e.target.value)))}
+                            placeholder="Horas"
+                            style={{ width: 70, padding: '3px 6px', fontSize: 12, textAlign: 'right', border: '1px solid #aab7b8', borderRadius: 4, outline: 'none', background: '#fff', color: '#16191f' }}
+                          />
+                          <span style={{ fontSize: 11, color: '#879596' }}>h</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <span style={{ fontSize: 11, color: '#879596' }}>R$</span>
+                          <input
+                            type="number" min={0}
+                            value={dadosFinanceiros[row._key]?.valorHora ?? ''}
+                            onChange={e => setFinanceiro(row._key, 'valorHora', Math.max(0, Number(e.target.value)))}
+                            placeholder="Valor/h"
+                            style={{ width: 70, padding: '3px 6px', fontSize: 12, textAlign: 'right', border: '1px solid #aab7b8', borderRadius: 4, outline: 'none', background: '#fff', color: '#16191f' }}
+                          />
+                        </div>
+                      </div>
+                    </td>
+                  ) : <td />}
+                  {/* Horas Trabalhadas (col4) */}
+                  <td style={{ padding: '8px 16px', fontSize: 13, textAlign: 'right', fontWeight: row._type === 'parent' ? 600 : 400, color: row._type === 'parent' ? '#16191f' : '#d45b07' }}>
                     {row.col4}
                   </td>
-                  {row._type === 'parent' ? (<>
-                    {/* Célula: Evolução */}
+                  {/* Evolução */}
+                  {row._type === 'parent' ? (
                     <td style={{ padding: '8px 12px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <input
@@ -502,34 +530,9 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
                         </div>
                       </div>
                     </td>
-                    {/* Célula: Horas Vendidas / Valor hora */}
-                    <td style={{ padding: '8px 12px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <input
-                              type="number" min={0}
-                              value={dadosFinanceiros[row._key]?.horasVendidas ?? ''}
-                              onChange={e => setFinanceiro(row._key, 'horasVendidas', Math.max(0, Number(e.target.value)))}
-                              placeholder="Horas"
-                              style={{ width: 70, padding: '3px 6px', fontSize: 12, textAlign: 'right', border: '1px solid #aab7b8', borderRadius: 4, outline: 'none', background: '#fff', color: '#16191f' }}
-                            />
-                            <span style={{ fontSize: 11, color: '#879596' }}>h</span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <span style={{ fontSize: 11, color: '#879596' }}>R$</span>
-                            <input
-                              type="number" min={0}
-                              value={dadosFinanceiros[row._key]?.valorHora ?? ''}
-                              onChange={e => setFinanceiro(row._key, 'valorHora', Math.max(0, Number(e.target.value)))}
-                              placeholder="Valor/h"
-                              style={{ width: 70, padding: '3px 6px', fontSize: 12, textAlign: 'right', border: '1px solid #aab7b8', borderRadius: 4, outline: 'none', background: '#fff', color: '#16191f' }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    {/* Célula: Valor Agregado */}
+                  ) : <td />}
+                  {/* Valor Agregado */}
+                  {row._type === 'parent' ? (
                     <td style={{ padding: '8px 16px', textAlign: 'right' }} onClick={e => e.stopPropagation()}>
                       {(() => {
                         const ev = evolucaoProjetos[row._key] ?? 0;
@@ -550,9 +553,7 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
                         );
                       })()}
                     </td>
-                  </>) : (<>
-                    <td /><td /><td />
-                  </>)}
+                  ) : <td />}
                 </tr>
               );
             })}
