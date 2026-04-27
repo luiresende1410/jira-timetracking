@@ -353,65 +353,6 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
   };
 
   const renderProjetos = () => {
-    type ProjRow = {
-      _key: string;
-      _type: 'parent' | 'child-colab' | 'child-tipo';
-      col1: string; col2: string; col3: string; col4: string;
-      parentKey?: string;
-    };
-    const rows: ProjRow[] = [];
-    for (const p of ps.sorted) {
-      rows.push({
-        _key: p.projeto_key,
-        _type: 'parent',
-        col1: p.projeto_nome,
-        col2: p.projeto_key,
-        col3: p.horas_por_tipo?.map(t => `${t.issue_type}: ${t.total_horas.toFixed(1)}h`).join(' | ') || '',
-        col4: `${p.total_horas.toFixed(1)}h`,
-        parentKey: p.projeto_key,
-      });
-      if (expandedProjeto === p.projeto_key) {
-        // Section: Colaboradores
-        rows.push({
-          _key: `${p.projeto_key}-header-colab`,
-          _type: 'child-tipo',
-          col1: 'Colaboradores', col2: '', col3: '', col4: '',
-          parentKey: p.projeto_key,
-        });
-        for (const c of [...p.colaboradores].sort((a, b) => b.total_horas - a.total_horas)) {
-          rows.push({
-            _key: `${p.projeto_key}-colab-${c.nome_colaborador}`,
-            _type: 'child-colab',
-            col1: c.nome_colaborador,
-            col2: `${c.percentual_contribuicao.toFixed(0)}%`,
-            col3: c.por_tipo?.map(t => `${t.issue_type}: ${t.total_horas.toFixed(1)}h`).join(' | ') || '',
-            col4: `${c.total_horas.toFixed(1)}h`,
-            parentKey: p.projeto_key,
-          });
-        }
-        // Section: Por Tipo
-        if (p.horas_por_tipo?.length > 0) {
-          rows.push({
-            _key: `${p.projeto_key}-header-tipo`,
-            _type: 'child-tipo',
-            col1: 'Por Tipo de Issue', col2: '', col3: '', col4: '',
-            parentKey: p.projeto_key,
-          });
-          for (const t of p.horas_por_tipo) {
-            rows.push({
-              _key: `${p.projeto_key}-tipo-${t.issue_type}`,
-              _type: 'child-colab',
-              col1: t.issue_type,
-              col2: p.total_horas > 0 ? `${(t.total_horas / p.total_horas * 100).toFixed(0)}%` : '0%',
-              col3: '',
-              col4: `${t.total_horas.toFixed(1)}h`,
-              parentKey: p.projeto_key,
-            });
-          }
-        }
-      }
-    }
-
     return (
     <SpaceBetween size="l">
       {projetos.length > 0 && (
@@ -447,46 +388,41 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
             </tr>
           </thead>
           <tbody>
-            {rows.map(row => {
-              const isSectionHeader = row._type === 'child-tipo' && (row.col1 === 'Colaboradores' || row.col1 === 'Por Tipo de Issue');
+            {ps.sorted.map(p => {
+              const isExpanded = expandedProjeto === p.projeto_key;
+              // Buscar atividades de cada colaborador neste projeto
+              const colabsComAtividades = colaboradores
+                .map(col => {
+                  const det = col.detalhes_por_projeto.find(d => d.projeto_key === p.projeto_key);
+                  if (!det) return null;
+                  return { nome: col.nome_colaborador, horas: det.total_horas, atividades: det.atividades };
+                })
+                .filter((x): x is { nome: string; horas: number; atividades: import('../types').DetalheAtividade[] } => x !== null)
+                .sort((a, b) => b.horas - a.horas);
               return (
-                <tr
-                  key={row._key}
-                  style={{
-                    borderBottom: "1px solid #e9ebed",
-                    backgroundColor: row._type === 'parent' ? 'transparent' : isSectionHeader ? '#e9ebed' : '#f8f9fa',
-                    cursor: row._type === 'parent' ? 'pointer' : 'default',
-                  }}
-                  onClick={() => {
-                    if (row._type === 'parent') {
-                      setExpandedProjeto(prev => prev === row.parentKey ? null : row.parentKey!);
-                    }
-                  }}
-                >
-                  <td style={{ padding: "10px 8px", textAlign: "center", color: "#879596", fontSize: 14 }}>
-                    {row._type === 'parent' ? (expandedProjeto === row.parentKey ? '▼' : '▶') : ''}
-                  </td>
-                  <td style={{
-                    padding: row._type === 'parent' ? "10px 16px" : isSectionHeader ? "6px 16px 6px 32px" : "8px 16px 8px 48px",
-                    fontWeight: row._type === 'parent' ? 700 : isSectionHeader ? 600 : 400,
-                    color: row._type === 'parent' ? "#16191f" : isSectionHeader ? "#545b64" : "#0073bb",
-                    fontSize: row._type === 'parent' ? 14 : 13,
-                    textTransform: isSectionHeader ? 'uppercase' : 'none',
-                    letterSpacing: isSectionHeader ? 1 : 0,
-                  }}>
-                    {row.col1}
-                  </td>
-                  <td style={{ padding: "8px 16px", fontSize: 12, color: "#5f6b7a" }}>{row.col2}</td>
-                  <td style={{ padding: "8px 16px", fontSize: 12, color: "#5f6b7a" }}>{row.col3}</td>
-                  {/* Horas Vendidas / Valor hora */}
-                  {row._type === 'parent' ? (
+                <>
+                  <tr
+                    key={p.projeto_key}
+                    style={{ borderBottom: isExpanded ? 'none' : '1px solid #e9ebed', cursor: 'pointer' }}
+                    onClick={() => setExpandedProjeto(prev => prev === p.projeto_key ? null : p.projeto_key)}
+                  >
+                    <td style={{ padding: "10px 8px", textAlign: "center", color: "#879596", fontSize: 14 }}>
+                      {isExpanded ? '▼' : '▶'}
+                    </td>
+                    <td style={{ padding: "10px 16px", fontWeight: 700, fontSize: 14, color: "#16191f" }}>
+                      {p.projeto_nome}
+                    </td>
+                    <td style={{ padding: "8px 16px", fontSize: 12, color: "#5f6b7a" }}>{p.projeto_key}</td>
+                    <td style={{ padding: "8px 16px", fontSize: 12, color: "#5f6b7a" }}>
+                      {p.horas_por_tipo?.map(t => `${t.issue_type}: h`).join(' | ') || ''}
+                    </td>
+                    {/* Horas Vendidas / Valor hora */}
                     <td style={{ padding: '8px 12px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <input
-                            type="number" min={0}
-                            value={dadosFinanceiros[row._key]?.horasVendidas ?? ''}
-                            onChange={e => setFinanceiro(row._key, 'horasVendidas', Math.max(0, Number(e.target.value)))}
+                          <input type="number" min={0}
+                            value={dadosFinanceiros[p.projeto_key]?.horasVendidas ?? ''}
+                            onChange={e => setFinanceiro(p.projeto_key, 'horasVendidas', Math.max(0, Number(e.target.value)))}
                             placeholder="Horas"
                             style={{ width: 70, padding: '3px 6px', fontSize: 12, textAlign: 'right', border: '1px solid #aab7b8', borderRadius: 4, outline: 'none', background: '#fff', color: '#16191f' }}
                           />
@@ -494,50 +430,44 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                           <span style={{ fontSize: 11, color: '#879596' }}>R$</span>
-                          <input
-                            type="number" min={0}
-                            value={dadosFinanceiros[row._key]?.valorHora ?? ''}
-                            onChange={e => setFinanceiro(row._key, 'valorHora', Math.max(0, Number(e.target.value)))}
+                          <input type="number" min={0}
+                            value={dadosFinanceiros[p.projeto_key]?.valorHora ?? ''}
+                            onChange={e => setFinanceiro(p.projeto_key, 'valorHora', Math.max(0, Number(e.target.value)))}
                             placeholder="Valor/h"
                             style={{ width: 70, padding: '3px 6px', fontSize: 12, textAlign: 'right', border: '1px solid #aab7b8', borderRadius: 4, outline: 'none', background: '#fff', color: '#16191f' }}
                           />
                         </div>
                       </div>
                     </td>
-                  ) : <td />}
-                  {/* Horas Trabalhadas (col4) */}
-                  <td style={{ padding: '8px 16px', fontSize: 13, textAlign: 'right', fontWeight: row._type === 'parent' ? 600 : 400, color: row._type === 'parent' ? '#16191f' : '#d45b07' }}>
-                    {row.col4}
-                  </td>
-                  {/* Evolução */}
-                  {row._type === 'parent' ? (
+                    {/* Horas Trabalhadas */}
+                    <td style={{ padding: '8px 16px', fontSize: 13, textAlign: 'right', fontWeight: 600, color: '#16191f' }}>
+                      {p.total_horas.toFixed(1)}h
+                    </td>
+                    {/* Evolução */}
                     <td style={{ padding: '8px 12px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <input
-                          type="number" min={0} max={100}
-                          value={evolucaoProjetos[row._key] ?? ''}
-                          onChange={e => setEvolucao(row._key, Math.min(100, Math.max(0, Number(e.target.value))))}
+                        <input type="number" min={0} max={100}
+                          value={evolucaoProjetos[p.projeto_key] ?? ''}
+                          onChange={e => setEvolucao(p.projeto_key, Math.min(100, Math.max(0, Number(e.target.value))))}
                           placeholder="0"
                           style={{ width: 48, padding: '4px 6px', fontSize: 13, textAlign: 'right', border: '1px solid #aab7b8', borderRadius: 4, outline: 'none', background: '#fff', color: '#16191f' }}
                         />
                         <span style={{ fontSize: 12, color: '#5f6b7a' }}>%</span>
                         <div style={{ flex: 1, background: '#e9ebed', borderRadius: 4, height: 8, overflow: 'hidden', minWidth: 50 }}>
                           <div style={{
-                            width: `${evolucaoProjetos[row._key] ?? 0}%`,
+                            width: `${evolucaoProjetos[p.projeto_key] ?? 0}%`,
                             height: '100%', borderRadius: 4, transition: 'width 0.3s',
-                            background: (evolucaoProjetos[row._key] ?? 0) >= 100 ? '#037f0c' : (evolucaoProjetos[row._key] ?? 0) >= 70 ? '#0073bb' : (evolucaoProjetos[row._key] ?? 0) >= 40 ? '#f0ab00' : '#d13212',
+                            background: (evolucaoProjetos[p.projeto_key] ?? 0) >= 100 ? '#037f0c' : (evolucaoProjetos[p.projeto_key] ?? 0) >= 70 ? '#0073bb' : (evolucaoProjetos[p.projeto_key] ?? 0) >= 40 ? '#f0ab00' : '#d13212',
                           }} />
                         </div>
                       </div>
                     </td>
-                  ) : <td />}
-                  {/* Valor Agregado */}
-                  {row._type === 'parent' ? (
+                    {/* Valor Agregado */}
                     <td style={{ padding: '8px 16px', textAlign: 'right' }} onClick={e => e.stopPropagation()}>
                       {(() => {
-                        const ev = evolucaoProjetos[row._key] ?? 0;
-                        const hv = dadosFinanceiros[row._key]?.horasVendidas ?? 0;
-                        const vh = dadosFinanceiros[row._key]?.valorHora ?? 0;
+                        const ev = evolucaoProjetos[p.projeto_key] ?? 0;
+                        const hv = dadosFinanceiros[p.projeto_key]?.horasVendidas ?? 0;
+                        const vh = dadosFinanceiros[p.projeto_key]?.valorHora ?? 0;
                         if (!hv || !vh) return <span style={{ fontSize: 12, color: '#879596' }}>—</span>;
                         const va = (ev / 100) * hv * vh;
                         const total = hv * vh;
@@ -553,8 +483,67 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
                         );
                       })()}
                     </td>
-                  ) : <td />}
-                </tr>
+                  </tr>
+                  {/* Painel expandido: atividades por colaborador */}
+                  {isExpanded && (
+                    <tr key={`${p.projeto_key}-expand`} style={{ borderBottom: '2px solid #e9ebed' }}>
+                      <td colSpan={8} style={{ padding: 0, background: '#f8f9fa' }}>
+                        <div style={{ padding: '16px 24px 20px 48px' }}>
+                          {colabsComAtividades.length === 0 ? (
+                            <Box color="text-status-inactive" fontSize="body-s">Nenhuma atividade encontrada para este projeto.</Box>
+                          ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                              {colabsComAtividades.map(colab => (
+                                <div key={colab.nome}>
+                                  {/* Cabeçalho do colaborador */}
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                                    <span style={{ fontSize: 13, fontWeight: 700, color: '#16191f' }}>{colab.nome}</span>
+                                    <span style={{ fontSize: 12, color: '#879596', background: '#e9ebed', padding: '2px 8px', borderRadius: 10 }}>
+                                      {colab.horas.toFixed(1)}h
+                                    </span>
+                                    <span style={{ fontSize: 11, color: '#879596' }}>
+                                      {colab.atividades.length} atividade{colab.atividades.length !== 1 ? 's' : ''}
+                                    </span>
+                                  </div>
+                                  {/* Tabela de atividades */}
+                                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                                    <thead>
+                                      <tr style={{ background: '#e9ebed' }}>
+                                        <th style={{ textAlign: 'left', padding: '5px 10px', color: '#545b64', fontWeight: 600, width: 100 }}>Issue</th>
+                                        <th style={{ textAlign: 'left', padding: '5px 10px', color: '#545b64', fontWeight: 600 }}>Atividade</th>
+                                        <th style={{ textAlign: 'left', padding: '5px 10px', color: '#545b64', fontWeight: 600, width: 120 }}>Tipo</th>
+                                        <th style={{ textAlign: 'left', padding: '5px 10px', color: '#545b64', fontWeight: 600, width: 100 }}>Data</th>
+                                        <th style={{ textAlign: 'right', padding: '5px 10px', color: '#545b64', fontWeight: 600, width: 80 }}>Horas</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {[...colab.atividades]
+                                        .sort((a, b) => new Date(b.data_registro).getTime() - new Date(a.data_registro).getTime())
+                                        .map((at, i) => (
+                                          <tr key={i} style={{ borderBottom: '1px solid #e9ebed', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                                            <td style={{ padding: '5px 10px', color: '#0073bb', fontWeight: 600, whiteSpace: 'nowrap' }}>{at.issue_key}</td>
+                                            <td style={{ padding: '5px 10px', color: '#16191f', maxWidth: 500 }}>
+                                              <div>{at.issue_summary}</div>
+                                              {at.comentario && <div style={{ color: '#879596', fontSize: 11, marginTop: 2 }}>{at.comentario}</div>}
+                                            </td>
+                                            <td style={{ padding: '5px 10px', color: '#5f6b7a' }}>{at.issue_type || '—'}</td>
+                                            <td style={{ padding: '5px 10px', color: '#879596', whiteSpace: 'nowrap' }}>
+                                              {at.data_registro ? new Date(at.data_registro).toLocaleDateString('pt-BR') : '—'}
+                                            </td>
+                                            <td style={{ padding: '5px 10px', textAlign: 'right', fontWeight: 600, color: '#d45b07' }}>{at.horas.toFixed(1)}h</td>
+                                          </tr>
+                                        ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </>
               );
             })}
           </tbody>
