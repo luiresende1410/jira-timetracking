@@ -238,7 +238,7 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
                   {times.map(([time, v]) => {
                     const diff = v.realizado - v.provisionado;
                     const pct = v.provisionado > 0 ? (v.realizado / v.provisionado) * 100 : 0;
-                    const barColor = pct >= 80 ? "#037f0c" : pct >= 60 ? "#f89256" : "#d13212";
+                    const barColor = pct >= 80 ? "#037f0c" : pct >= 70 ? "#f89256" : "#d13212";
                     const barWidth = Math.min(pct, 100);
                     return (
                       <tr key={time} style={{ borderBottom: "1px solid #e9ebed" }}>

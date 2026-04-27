@@ -163,7 +163,7 @@ async def relatorio_completo(
             "horas_reais": round(horas_reais, 1),
             "diferenca": diferenca,
             "percentual_utilizacao": percentual,
-            "status": "ok" if percentual >= 80 else ("atencao" if percentual >= 60 else "critico"),
+            "status": "ok" if percentual >= 80 else ("atencao" if percentual >= 50 else "critico"),
         })
 
     return {
@@ -339,6 +339,7 @@ async def put_perfil_capacity(perfil: str, body: PerfilCapacityUpdate):
 async def shutdown():
     if _cliente:
         await _cliente.close()
+
 
 
 
