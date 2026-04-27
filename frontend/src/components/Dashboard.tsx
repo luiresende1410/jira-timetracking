@@ -109,6 +109,16 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
       return next;
     });
   };
+  const [dadosFinanceiros, setDadosFinanceiros] = useState<Record<string, { horasVendidas: number; valorHora: number }>>(() => {
+    try { return JSON.parse(localStorage.getItem('dados_financeiros_projetos') || '{}'); } catch { return {}; }
+  });
+  const setFinanceiro = (key: string, campo: 'horasVendidas' | 'valorHora', val: number) => {
+    setDadosFinanceiros(prev => {
+      const next = { ...prev, [key]: { ...(prev[key] ?? { horasVendidas: 0, valorHora: 0 }), [campo]: val } };
+      localStorage.setItem('dados_financeiros_projetos', JSON.stringify(next));
+      return next;
+    });
+  };
   const [mspCapacity, setMspCapacity] = useState<Record<string, ClienteMSP>>({});
 
   const MSP_PROJETO = 'CloudDog - Suporte SRE';
@@ -431,7 +441,9 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
               <th style={{ textAlign: "left", padding: "12px 16px", fontSize: 14, color: "#545b64" }}>Key / %</th>
               <th style={{ textAlign: "left", padding: "12px 16px", fontSize: 14, color: "#545b64" }}>Tipos de Issue</th>
               <th style={{ textAlign: "right", padding: "12px 16px", fontSize: 14, color: "#545b64" }}>Total Horas</th>
-              <th style={{ textAlign: "center", padding: "12px 16px", fontSize: 14, color: "#545b64", width: 180 }}>Evolução</th>
+              <th style={{ textAlign: 'center', padding: '12px 12px', fontSize: 13, color: '#545b64', width: 200 }}>Evolução</th>
+              <th style={{ textAlign: 'center', padding: '12px 12px', fontSize: 13, color: '#545b64', width: 200 }}>Horas Vendidas / Valor hora</th>
+              <th style={{ textAlign: 'right', padding: '12px 16px', fontSize: 13, color: '#545b64', width: 160 }}>Valor Agregado</th>
             </tr>
           </thead>
           <tbody>
@@ -469,40 +481,78 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
                   <td style={{ padding: "8px 16px", fontSize: 13, textAlign: "right", fontWeight: row._type === 'parent' ? 600 : 400, color: row._type === 'parent' ? "#16191f" : "#d45b07" }}>
                     {row.col4}
                   </td>
-                  {row._type === 'parent' ? (
-                    <td style={{ padding: '8px 16px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {row._type === 'parent' ? (<>
+                    {/* Célula: Evolução */}
+                    <td style={{ padding: '8px 12px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <input
-                          type="number"
-                          min={0}
-                          max={100}
+                          type="number" min={0} max={100}
                           value={evolucaoProjetos[row._key] ?? ''}
-                          onChange={e => {
-                            const v = Math.min(100, Math.max(0, Number(e.target.value)));
-                            setEvolucao(row._key, v);
-                          }}
+                          onChange={e => setEvolucao(row._key, Math.min(100, Math.max(0, Number(e.target.value))))}
                           placeholder="0"
-                          style={{
-                            width: 52, padding: '4px 6px', fontSize: 13, textAlign: 'right',
-                            border: '1px solid #aab7b8', borderRadius: 4, outline: 'none',
-                            background: '#fff', color: '#16191f',
-                          }}
+                          style={{ width: 48, padding: '4px 6px', fontSize: 13, textAlign: 'right', border: '1px solid #aab7b8', borderRadius: 4, outline: 'none', background: '#fff', color: '#16191f' }}
                         />
                         <span style={{ fontSize: 12, color: '#5f6b7a' }}>%</span>
-                        <div style={{ flex: 1, background: '#e9ebed', borderRadius: 4, height: 8, overflow: 'hidden', minWidth: 60 }}>
+                        <div style={{ flex: 1, background: '#e9ebed', borderRadius: 4, height: 8, overflow: 'hidden', minWidth: 50 }}>
                           <div style={{
                             width: `${evolucaoProjetos[row._key] ?? 0}%`,
                             height: '100%', borderRadius: 4, transition: 'width 0.3s',
-                            background: (evolucaoProjetos[row._key] ?? 0) >= 100 ? '#037f0c'
-                              : (evolucaoProjetos[row._key] ?? 0) >= 70 ? '#0073bb'
-                              : (evolucaoProjetos[row._key] ?? 0) >= 40 ? '#f0ab00' : '#d13212',
+                            background: (evolucaoProjetos[row._key] ?? 0) >= 100 ? '#037f0c' : (evolucaoProjetos[row._key] ?? 0) >= 70 ? '#0073bb' : (evolucaoProjetos[row._key] ?? 0) >= 40 ? '#f0ab00' : '#d13212',
                           }} />
                         </div>
                       </div>
                     </td>
-                  ) : (
-                    <td />
-                  )}
+                    {/* Célula: Horas Vendidas / Valor hora */}
+                    <td style={{ padding: '8px 12px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <input
+                              type="number" min={0}
+                              value={dadosFinanceiros[row._key]?.horasVendidas ?? ''}
+                              onChange={e => setFinanceiro(row._key, 'horasVendidas', Math.max(0, Number(e.target.value)))}
+                              placeholder="Horas"
+                              style={{ width: 70, padding: '3px 6px', fontSize: 12, textAlign: 'right', border: '1px solid #aab7b8', borderRadius: 4, outline: 'none', background: '#fff', color: '#16191f' }}
+                            />
+                            <span style={{ fontSize: 11, color: '#879596' }}>h</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <span style={{ fontSize: 11, color: '#879596' }}>R$</span>
+                            <input
+                              type="number" min={0}
+                              value={dadosFinanceiros[row._key]?.valorHora ?? ''}
+                              onChange={e => setFinanceiro(row._key, 'valorHora', Math.max(0, Number(e.target.value)))}
+                              placeholder="Valor/h"
+                              style={{ width: 70, padding: '3px 6px', fontSize: 12, textAlign: 'right', border: '1px solid #aab7b8', borderRadius: 4, outline: 'none', background: '#fff', color: '#16191f' }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    {/* Célula: Valor Agregado */}
+                    <td style={{ padding: '8px 16px', textAlign: 'right' }} onClick={e => e.stopPropagation()}>
+                      {(() => {
+                        const ev = evolucaoProjetos[row._key] ?? 0;
+                        const hv = dadosFinanceiros[row._key]?.horasVendidas ?? 0;
+                        const vh = dadosFinanceiros[row._key]?.valorHora ?? 0;
+                        if (!hv || !vh) return <span style={{ fontSize: 12, color: '#879596' }}>—</span>;
+                        const va = (ev / 100) * hv * vh;
+                        const total = hv * vh;
+                        return (
+                          <div>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: '#037f0c' }}>
+                              {va.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            </div>
+                            <div style={{ fontSize: 11, color: '#879596', marginTop: 2 }}>
+                              de {total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </td>
+                  </>) : (<>
+                    <td /><td /><td />
+                  </>)}
                 </tr>
               );
             })}
