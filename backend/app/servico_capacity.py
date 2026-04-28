@@ -73,6 +73,25 @@ def atualizar_perfil(perfil: str, categorias: dict) -> dict:
     return data[perfil]
 
 
+def criar_perfil(perfil: str, categorias: dict) -> dict:
+    """Cria um novo perfil. Lanca ValueError se perfil ja existe."""
+    data = _carregar_perfis()
+    if perfil in data:
+        raise ValueError(f"Perfil '{perfil}' ja existe")
+    data[perfil] = categorias
+    _salvar_perfis(data)
+    return data[perfil]
+
+
+def deletar_perfil(perfil: str) -> None:
+    """Remove um perfil. Lanca KeyError se perfil nao existe."""
+    data = _carregar_perfis()
+    if perfil not in data:
+        raise KeyError(f"Perfil '{perfil}' nao encontrado")
+    del data[perfil]
+    _salvar_perfis(data)
+
+
 # Dias uteis
 
 def contar_dias_uteis(inicio: date, fim: date) -> int:
@@ -125,3 +144,4 @@ def calcular_capacity(periodo_inicio: date, periodo_fim: date) -> dict:
         })
 
     return resultado
+

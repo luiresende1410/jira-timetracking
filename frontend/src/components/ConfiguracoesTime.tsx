@@ -6,6 +6,8 @@ import {
   getPerfis,
   getPerfisCapacity,
   updatePerfilCapacity,
+  createPerfilCapacity,
+  deletePerfilCapacity,
   type ColaboradorConfig,
 } from '../api';
 
@@ -123,6 +125,10 @@ export default function ConfiguracoesTime() {
 
   // Modal perfil capacity
   const [modalEditPerfil, setModalEditPerfil] = useState<string | null>(null);
+  const [modalNovoPerfil, setModalNovoPerfil] = useState(false);
+  const [modalRemovePerfil, setModalRemovePerfil] = useState<string | null>(null);
+  const [formNovoPerfil, setFormNovoPerfil] = useState({ nome: '', categorias: [{ nome: '', horas: '' }] });
+  const [errosNovoPerfil, setErrosNovoPerfil] = useState<{ nome?: string; categorias?: string[] }>({});
 
   // Notificacao global
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -314,6 +320,72 @@ export default function ConfiguracoesTime() {
     }
   }
 
+  // ── Novo perfil ───────────────────────────────────────────────────────────
+
+  function abrirNovoPerfil() {
+    setFormNovoPerfil({ nome: '', categorias: [{ nome: '', horas: '' }] });
+    setErrosNovoPerfil({});
+    setModalNovoPerfil(true);
+  }
+
+  function fecharNovoPerfil() {
+    setModalNovoPerfil(false);
+    setErrosNovoPerfil({});
+  }
+
+  async function salvarNovoPerfil() {
+    const erros: { nome?: string; categorias?: string[] } = {};
+    if (!formNovoPerfil.nome.trim()) erros.nome = 'Campo obrigatório';
+    else if (perfis[formNovoPerfil.nome.trim()]) erros.nome = 'Já existe um perfil com este nome';
+    const errosCats: string[] = formNovoPerfil.categorias.map(c => {
+      if (!c.nome.trim()) return 'Nome obrigatório';
+      const n = Number(c.horas);
+      if (c.horas.trim() === '' || isNaN(n)) return 'Valor inválido';
+      if (n < 0) return 'Deve ser ≥ 0';
+      return '';
+    });
+    if (errosCats.some(e => e)) erros.categorias = errosCats;
+    if (Object.keys(erros).length > 0) { setErrosNovoPerfil(erros); return; }
+
+    setSalvando(true);
+    const nomePerfil = formNovoPerfil.nome.trim();
+    const categorias: Record<string, number> = {};
+    for (const c of formNovoPerfil.categorias) {
+      categorias[c.nome.trim()] = Number(c.horas);
+    }
+    try {
+      const resultado = await createPerfilCapacity(nomePerfil, categorias);
+      setPerfis(prev => ({ ...prev, [nomePerfil]: resultado }));
+      setPerfisDisponiveis(prev => [...prev, nomePerfil].sort());
+      setNotification({ type: 'success', message: `Perfil "${nomePerfil}" criado com sucesso.` });
+      fecharNovoPerfil();
+    } catch (err) {
+      setNotification({ type: 'error', message: err instanceof Error ? err.message : 'Erro ao criar perfil' });
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  // ── Excluir perfil ─────────────────────────────────────────────────────────
+
+  async function confirmarRemovePerfil() {
+    if (!modalRemovePerfil) return;
+    setSalvando(true);
+    const perfil = modalRemovePerfil;
+    try {
+      await deletePerfilCapacity(perfil);
+      setPerfis(prev => { const next = { ...prev }; delete next[perfil]; return next; });
+      setPerfisDisponiveis(prev => prev.filter(p => p !== perfil));
+      setNotification({ type: 'success', message: `Perfil "${perfil}" excluído com sucesso.` });
+      setModalRemovePerfil(null);
+    } catch (err) {
+      setNotification({ type: 'error', message: err instanceof Error ? err.message : 'Erro ao excluir' });
+      setModalRemovePerfil(null);
+    } finally {
+      setSalvando(false);
+    }
+  }
+
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
@@ -409,7 +481,14 @@ export default function ConfiguracoesTime() {
       {/* ── Secao 2: Gerenciar Horas por Perfil ── */}
       <Container
         header={
-          <Header variant="h2">
+          <Header
+            variant="h2"
+            actions={
+              <Button variant="primary" onClick={abrirNovoPerfil} disabled={loadingPerfis}>
+                Novo Perfil
+              </Button>
+            }
+          >
             Gerenciar Horas por Perfil
           </Header>
         }
@@ -442,6 +521,9 @@ export default function ConfiguracoesTime() {
                       </span>
                       <Button variant="inline-link" onClick={() => abrirEditPerfil(nomePerfil)}>
                         Editar
+                      </Button>
+                      <Button variant="inline-link" onClick={() => setModalRemovePerfil(nomePerfil)}>
+                        <span style={{ color: '#d13212' }}>Excluir</span>
                       </Button>
                     </div>
                   </div>
@@ -638,6 +720,122 @@ export default function ConfiguracoesTime() {
           </div>
         </div>
       )}
-    </SpaceBetween>
+
+      {/* ── Modal: Novo Perfil ── */}
+      {modalNovoPerfil && (
+        <div style={overlayStyle}>
+          <div style={{ ...modalStyle, maxWidth: 520 }}>
+            <h3 style={{ margin: '0 0 20px', fontSize: 16, fontWeight: 700, color: '#16191f' }}>
+              Novo Perfil
+            </h3>
+
+            <div style={fieldStyle}>
+              <label style={labelStyle}>Nome do Perfil</label>
+              <input
+                type="text"
+                value={formNovoPerfil.nome}
+                onChange={e => setFormNovoPerfil(f => ({ ...f, nome: e.target.value }))}
+                style={{ ...inputStyle, borderColor: errosNovoPerfil.nome ? '#d13212' : '#aab7b8' }}
+                placeholder="Ex: Sênior, Júnior, Consultor..."
+              />
+              {errosNovoPerfil.nome && <div style={errorMsgStyle}>{errosNovoPerfil.nome}</div>}
+            </div>
+
+            <div style={{ marginBottom: 8 }}>
+              <label style={labelStyle}>Categorias de Horas</label>
+              {formNovoPerfil.categorias.map((cat, idx) => (
+                <div key={idx} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'flex-start' }}>
+                  <div style={{ flex: 2 }}>
+                    <input
+                      type="text"
+                      value={cat.nome}
+                      onChange={e => setFormNovoPerfil(f => {
+                        const cats = [...f.categorias];
+                        cats[idx] = { ...cats[idx], nome: e.target.value };
+                        return { ...f, categorias: cats };
+                      })}
+                      placeholder="Nome da categoria"
+                      style={{ ...inputStyle, borderColor: errosNovoPerfil.categorias?.[idx] ? '#d13212' : '#aab7b8' }}
+                    />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      value={cat.horas}
+                      onChange={e => setFormNovoPerfil(f => {
+                        const cats = [...f.categorias];
+                        cats[idx] = { ...cats[idx], horas: e.target.value };
+                        return { ...f, categorias: cats };
+                      })}
+                      placeholder="h/dia"
+                      style={{ ...inputStyle, borderColor: errosNovoPerfil.categorias?.[idx] ? '#d13212' : '#aab7b8' }}
+                    />
+                  </div>
+                  <button
+                    onClick={() => setFormNovoPerfil(f => ({ ...f, categorias: f.categorias.filter((_, i) => i !== idx) }))}
+                    disabled={formNovoPerfil.categorias.length <= 1}
+                    style={{ padding: '7px 10px', border: '1px solid #aab7b8', borderRadius: 4, background: '#f2f3f3', cursor: 'pointer', color: '#d13212', fontSize: 14, lineHeight: 1 }}
+                  >
+                    ✕
+                  </button>
+                  {errosNovoPerfil.categorias?.[idx] && (
+                    <div style={{ ...errorMsgStyle, alignSelf: 'center' }}>{errosNovoPerfil.categorias[idx]}</div>
+                  )}
+                </div>
+              ))}
+              <button
+                onClick={() => setFormNovoPerfil(f => ({ ...f, categorias: [...f.categorias, { nome: '', horas: '' }] }))}
+                style={{ fontSize: 12, color: '#0073bb', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0' }}
+              >
+                + Adicionar categoria
+              </button>
+            </div>
+
+            <div style={modalActionsStyle}>
+              <Button variant="link" onClick={fecharNovoPerfil} disabled={salvando}>
+                Cancelar
+              </Button>
+              <Button variant="primary" onClick={salvarNovoPerfil} loading={salvando}>
+                Criar Perfil
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal: Confirmar Exclusão de Perfil ── */}
+      {modalRemovePerfil !== null && (
+        <div style={overlayStyle}>
+          <div style={{ ...modalStyle, maxWidth: 400 }}>
+            <h3 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 700, color: '#16191f' }}>
+              Excluir Perfil
+            </h3>
+            <p style={{ margin: '0 0 8px', fontSize: 13, color: '#16191f' }}>
+              Tem certeza que deseja excluir o perfil:
+            </p>
+            <p style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 700, color: '#d13212' }}>
+              {modalRemovePerfil}
+            </p>
+            <p style={{ margin: '0 0 20px', fontSize: 12, color: '#879596' }}>
+              Esta ação não pode ser desfeita. Colaboradores com este perfil não serão afetados.
+            </p>
+            <div style={modalActionsStyle}>
+              <Button variant="link" onClick={() => setModalRemovePerfil(null)} disabled={salvando}>
+                Cancelar
+              </Button>
+              <Button variant="primary" onClick={confirmarRemovePerfil} loading={salvando}>
+                Excluir
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}    </SpaceBetween>
   );
 }
+
+
+
+
+

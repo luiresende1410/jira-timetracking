@@ -19,6 +19,8 @@ from .servico_capacity import (
     calcular_capacity,
     listar_perfis,
     atualizar_perfil,
+    criar_perfil,
+    deletar_perfil,
 )
 from .models import (
     RelatorioColaborador,
@@ -335,10 +337,39 @@ async def put_perfil_capacity(perfil: str, body: PerfilCapacityUpdate):
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
+
+class PerfilCapacityCreate(BaseModel):
+    categorias: dict[str, float]
+
+
+@app.post("/api/perfis-capacity/{perfil}")
+async def post_perfil_capacity(perfil: str, body: PerfilCapacityCreate):
+    for categoria, horas in body.categorias.items():
+        if horas < 0:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Valor de horas para '{categoria}' deve ser maior ou igual a zero",
+            )
+    try:
+        resultado = criar_perfil(perfil, body.categorias)
+        return resultado
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+
+
+@app.delete("/api/perfis-capacity/{perfil}")
+async def delete_perfil_capacity(perfil: str):
+    try:
+        deletar_perfil(perfil)
+        return {"status": "ok"}
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
 @app.on_event("shutdown")
 async def shutdown():
     if _cliente:
         await _cliente.close()
+
 
 
 

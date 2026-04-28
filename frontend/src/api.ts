@@ -183,3 +183,20 @@ export async function updatePerfilCapacity(
     { method: 'PUT', body: JSON.stringify({ categorias }) }
   );
 }
+
+export async function createPerfilCapacity(
+  perfil: string,
+  categorias: Record<string, number>
+) {
+  return request<Record<string, number>>(
+    API + '/perfis-capacity/' + encodeURIComponent(perfil),
+    { method: 'POST', body: JSON.stringify({ categorias }) }
+  );
+}
+
+export async function deletePerfilCapacity(perfil: string) {
+  return request<{ status: string }>(
+    API + '/perfis-capacity/' + encodeURIComponent(perfil),
+    { method: 'DELETE' }
+  );
+}
