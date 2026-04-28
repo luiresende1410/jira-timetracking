@@ -1,322 +1,322 @@
 {
-  "ADALTECH": {
-    "horas": 10,
-    "equipe": "SRE - TORINO",
-    "status": "Ativo"
-  },
-  "ALTOQI": {
-    "horas": 10,
-    "equipe": "SRE - PRATO",
-    "status": "Ativo"
-  },
-  "APPTICKET": {
-    "horas": 5,
-    "equipe": "SRE - PRATO",
-    "status": "Ativo"
-  },
-  "ATTO INTELLIGENCE": {
-    "horas": 20,
-    "equipe": "SRE - TORINO",
-    "status": "Ativo"
-  },
-  "ATTO SEMENTES": {
-    "horas": 20,
-    "equipe": "SRE - PRATO",
-    "status": "Ativo"
-  },
-  "ATTO TECHNOLOGY": {
-    "horas": 5,
-    "equipe": "SRE - PRATO",
-    "status": "Ativo"
-  },
-  "BIO2": {
-    "horas": 5,
-    "equipe": "SRE - TORINO",
-    "status": "Ativo"
-  },
-  "BRAAVO": {
-    "horas": 0,
-    "equipe": "SRE - TORINO",
-    "status": "Suspenso"
-  },
-  "BRASIL OPEN BADGE": {
-    "horas": 5,
-    "equipe": "SRE - PRATO",
-    "status": "Ativo"
-  },
-  "BRINDE.ME": {
-    "horas": 10,
-    "equipe": "SRE - PRATO",
-    "status": "Ativo"
-  },
-  "CARDAPIOWEB": {
-    "horas": 0,
-    "equipe": "SRE - TORINO",
-    "status": "Suspenso"
-  },
-  "CATALISE": {
-    "horas": 60,
-    "equipe": "SRE - PRATO",
-    "status": "Ativo"
-  },
-  "CELERE": {
-    "horas": 5,
-    "equipe": "SRE - PRATO",
-    "status": "Ativo"
-  },
-  "CLOUDDOG - PRODUTOS": {
-    "horas": 120,
-    "equipe": "DEV - LEO",
-    "status": "Ativo"
-  },
-  "CONSIGLOG": {
-    "horas": 20,
-    "equipe": "SRE - PRATO",
-    "status": "Ativo"
-  },
-  "CORPCLOUD": {
-    "horas": 10,
-    "equipe": "SRE - TORINO",
-    "status": "Ativo"
-  },
-  "CORREIAS MERCURIO": {
-    "horas": 5,
-    "equipe": "SRE - PRATO",
-    "status": "Ativo"
-  },
-  "DGT": {
-    "horas": 10,
-    "equipe": "SRE - PRATO",
-    "status": "Ativo"
-  },
-  "DIA": {
-    "horas": 10,
-    "equipe": "DEV - LEO",
-    "status": "Ativo"
-  },
-  "DINHEIROW": {
-    "horas": 10,
-    "equipe": "SRE - TORINO",
-    "status": "Ativo"
-  },
-  "DOOSAN": {
-    "horas": 5.0,
-    "equipe": "SRE - PRATO",
-    "status": "Suspenso"
-  },
-  "ECONFORM": {
-    "horas": 5,
-    "equipe": "SRE - TORINO",
-    "status": "Ativo"
-  },
-  "ECOURBIS": {
-    "horas": 10,
-    "equipe": "DEV - LEO",
-    "status": "Ativo"
-  },
-  "ERPFLEX": {
-    "horas": 10,
-    "equipe": "SRE - TORINO",
-    "status": "Ativo"
-  },
-  "ESATTO": {
-    "horas": 0,
-    "equipe": "SRE - PRATO",
-    "status": "Suspenso"
-  },
-  "FEATBANK": {
-    "horas": 30,
-    "equipe": "SRE - TORINO",
-    "status": "Ativo"
-  },
-  "FEATCODE": {
-    "horas": 10,
-    "equipe": "SRE - PRATO",
-    "status": "Ativo"
-  },
-  "FOCUS_NFE": {
-    "horas": 10,
-    "equipe": "SRE - TORINO",
-    "status": "Ativo"
-  },
-  "FOOTSTATS": {
-    "horas": 10,
-    "equipe": "SRE - PRATO",
-    "status": "Ativo"
-  },
-  "GREENN": {
-    "horas": 20,
-    "equipe": "SRE - TORINO",
-    "status": "Ativo"
-  },
-  "GUEPTECH": {
-    "horas": 20,
-    "equipe": "SRE - PRATO",
-    "status": "Ativo"
-  },
-  "INED": {
-    "horas": 5,
-    "equipe": "SRE - TORINO",
-    "status": "Ativo"
-  },
-  "INOVASHOP": {
-    "horas": 10,
-    "equipe": "SRE - TORINO",
-    "status": "Ativo"
-  },
-  "IOTAHUB": {
-    "horas": 20,
-    "equipe": "SRE - TORINO",
-    "status": "Ativo"
-  },
-  "JETBOV": {
-    "horas": 10,
-    "equipe": "SRE - PRATO",
-    "status": "Ativo"
-  },
-  "LIFE": {
-    "horas": 5,
-    "equipe": "SRE - TORINO",
-    "status": "Ativo"
-  },
-  "LWART": {
-    "horas": 10,
-    "equipe": "DEV - LEO",
-    "status": "Ativo"
-  },
-  "MEZZOW": {
-    "horas": 0,
-    "equipe": "SRE - TORINO",
-    "status": "Suspenso"
-  },
-  "MONITORY": {
-    "horas": 5,
-    "equipe": "SRE - TORINO",
-    "status": "Ativo"
-  },
-  "MULTIMOVEIS": {
-    "horas": 5,
-    "equipe": "SRE - PRATO",
-    "status": "Ativo"
-  },
-  "MULTPEX": {
-    "horas": 5,
-    "equipe": "SRE - PRATO",
-    "status": "Ativo"
-  },
-  "NGX": {
-    "horas": 0,
-    "equipe": "SRE - PRATO",
-    "status": "Suspenso"
-  },
-  "NITZSCHE": {
-    "horas": 10,
-    "equipe": "SRE - PRATO",
-    "status": "Ativo"
-  },
-  "NODE TECH": {
-    "horas": 10,
-    "equipe": "SRE - TORINO",
-    "status": "Ativo"
-  },
-  "OFICIAL_FARMA": {
-    "horas": 20,
-    "equipe": "SRE - TORINO",
-    "status": "Ativo"
-  },
-  "PAULISTA SERVICOS": {
-    "horas": 20,
-    "equipe": "SRE - TORINO",
-    "status": "Ativo"
-  },
-  "PEEX": {
-    "horas": 10,
-    "equipe": "SRE - TORINO",
-    "status": "Ativo"
-  },
-  "PULSAR": {
-    "horas": 10,
-    "equipe": "SRE - TORINO",
-    "status": "Ativo"
-  },
-  "QUATA": {
-    "horas": 0,
-    "equipe": "SRE - TORINO",
-    "status": "Suspenso"
-  },
-  "REALS BET": {
-    "horas": 20,
-    "equipe": "SRE - PRATO",
-    "status": "Ativo"
-  },
-  "RESERVA": {
-    "horas": 120,
-    "equipe": "SRE - TORINO",
-    "status": "Ativo"
-  },
-  "RIO VERDE": {
-    "horas": 10,
-    "equipe": "SRE - PRATO",
-    "status": "Ativo"
-  },
-  "ROBERTY APP": {
-    "horas": 10,
-    "equipe": "SRE - TORINO",
-    "status": "Ativo"
-  },
-  "SINAPSE": {
-    "horas": 5,
-    "equipe": "SRE - PRATO",
-    "status": "Ativo"
-  },
-  "SINCRONISMO": {
-    "horas": 10,
-    "equipe": "SRE - PRATO",
-    "status": "Ativo"
-  },
-  "SISTEMATIZZE": {
-    "horas": 5,
-    "equipe": "SRE - PRATO",
-    "status": "Ativo"
-  },
-  "SMCLICK": {
-    "horas": 5,
-    "equipe": "SRE - PRATO",
-    "status": "Ativo"
-  },
-  "SPANI": {
-    "horas": 10,
-    "equipe": "DEV - LEO",
-    "status": "Ativo"
-  },
-  "TALK RADIO": {
-    "horas": 10,
-    "equipe": "SRE - PRATO",
-    "status": "Ativo"
-  },
-  "TELTELECOM": {
-    "horas": 10,
-    "equipe": "SRE - TORINO",
-    "status": "Ativo"
-  },
-  "TOPFARM": {
-    "horas": 0,
-    "equipe": "SRE - TORINO",
-    "status": "Suspenso"
-  },
-  "VBS": {
-    "horas": 20,
-    "equipe": "SRE - PRATO",
-    "status": "Ativo"
-  },
-  "VITAFOR": {
-    "horas": 5,
-    "equipe": "SRE - TORINO",
-    "status": "Ativo"
-  },
-  "ZENITECH": {
-    "horas": 10,
-    "equipe": "SRE - PRATO",
-    "status": "Ativo"
-  }
+    "ADALTECH":  {
+                     "horas":  10,
+                     "equipe":  "SRE - TORINO",
+                     "status":  "Ativo"
+                 },
+    "ALTOQI":  {
+                   "horas":  10,
+                   "equipe":  "SRE - PRATO",
+                   "status":  "Ativo"
+               },
+    "APPTICKET":  {
+                      "horas":  5,
+                      "equipe":  "SRE - PRATO",
+                      "status":  "Ativo"
+                  },
+    "ATTO INTELLIGENCE":  {
+                              "horas":  20,
+                              "equipe":  "SRE - TORINO",
+                              "status":  "Ativo"
+                          },
+    "ATTO SEMENTES":  {
+                          "horas":  20,
+                          "equipe":  "SRE - PRATO",
+                          "status":  "Ativo"
+                      },
+    "ATTO TECHNOLOGY":  {
+                            "horas":  5,
+                            "equipe":  "SRE - PRATO",
+                            "status":  "Ativo"
+                        },
+    "BIO2":  {
+                 "horas":  5,
+                 "equipe":  "SRE - TORINO",
+                 "status":  "Ativo"
+             },
+    "BRAAVO":  {
+                   "horas":  0,
+                   "equipe":  "SRE - TORINO",
+                   "status":  "Suspenso"
+               },
+    "BRASIL OPEN BADGE":  {
+                              "horas":  5,
+                              "equipe":  "SRE - PRATO",
+                              "status":  "Ativo"
+                          },
+    "BRINDE.ME":  {
+                      "horas":  10,
+                      "equipe":  "SRE - PRATO",
+                      "status":  "Ativo"
+                  },
+    "CARDAPIOWEB":  {
+                        "horas":  0,
+                        "equipe":  "SRE - TORINO",
+                        "status":  "Suspenso"
+                    },
+    "CATALISE":  {
+                     "horas":  60,
+                     "equipe":  "SRE - PRATO",
+                     "status":  "Ativo"
+                 },
+    "CELERE":  {
+                   "horas":  5,
+                   "equipe":  "SRE - PRATO",
+                   "status":  "Ativo"
+               },
+    "CLOUDDOG - PRODUTOS":  {
+                                "horas":  120,
+                                "equipe":  "DEV - LEO",
+                                "status":  "Ativo"
+                            },
+    "CONSIGLOG":  {
+                      "horas":  20,
+                      "equipe":  "SRE - PRATO",
+                      "status":  "Ativo"
+                  },
+    "CORPCLOUD":  {
+                      "horas":  10,
+                      "equipe":  "SRE - TORINO",
+                      "status":  "Ativo"
+                  },
+    "CORREIAS MERCURIO":  {
+                              "horas":  5,
+                              "equipe":  "SRE - PRATO",
+                              "status":  "Ativo"
+                          },
+    "DGT":  {
+                "horas":  10,
+                "equipe":  "SRE - PRATO",
+                "status":  "Ativo"
+            },
+    "DIA":  {
+                "horas":  10,
+                "equipe":  "DEV - LEO",
+                "status":  "Ativo"
+            },
+    "DINHEIROW":  {
+                      "horas":  10,
+                      "equipe":  "SRE - TORINO",
+                      "status":  "Ativo"
+                  },
+    "DOOSAN":  {
+                   "horas":  5.0,
+                   "equipe":  "SRE - PRATO",
+                   "status":  "Suspenso"
+               },
+    "ECONFORM":  {
+                     "horas":  5,
+                     "equipe":  "SRE - TORINO",
+                     "status":  "Ativo"
+                 },
+    "ECOURBIS":  {
+                     "horas":  10,
+                     "equipe":  "DEV - LEO",
+                     "status":  "Ativo"
+                 },
+    "ERPFLEX":  {
+                    "horas":  10,
+                    "equipe":  "SRE - TORINO",
+                    "status":  "Ativo"
+                },
+    "ESATTO":  {
+                   "horas":  0,
+                   "equipe":  "SRE - PRATO",
+                   "status":  "Suspenso"
+               },
+    "FEATBANK":  {
+                     "horas":  30,
+                     "equipe":  "SRE - TORINO",
+                     "status":  "Ativo"
+                 },
+    "FEATCODE":  {
+                     "horas":  10,
+                     "equipe":  "SRE - PRATO",
+                     "status":  "Ativo"
+                 },
+    "FOCUS_NFE":  {
+                      "horas":  10,
+                      "equipe":  "SRE - TORINO",
+                      "status":  "Ativo"
+                  },
+    "FOOTSTATS":  {
+                      "horas":  10,
+                      "equipe":  "SRE - PRATO",
+                      "status":  "Ativo"
+                  },
+    "GREENN":  {
+                   "horas":  20,
+                   "equipe":  "SRE - TORINO",
+                   "status":  "Ativo"
+               },
+    "GUEPTECH":  {
+                     "horas":  20,
+                     "equipe":  "SRE - PRATO",
+                     "status":  "Ativo"
+                 },
+    "INED":  {
+                 "horas":  5,
+                 "equipe":  "SRE - TORINO",
+                 "status":  "Ativo"
+             },
+    "INOVASHOP":  {
+                      "horas":  10,
+                      "equipe":  "SRE - TORINO",
+                      "status":  "Ativo"
+                  },
+    "IOTAHUB":  {
+                    "horas":  20,
+                    "equipe":  "SRE - TORINO",
+                    "status":  "Ativo"
+                },
+    "JETBOV":  {
+                   "horas":  10,
+                   "equipe":  "SRE - PRATO",
+                   "status":  "Ativo"
+               },
+    "LIFE":  {
+                 "horas":  5,
+                 "equipe":  "SRE - TORINO",
+                 "status":  "Ativo"
+             },
+    "LWART":  {
+                  "horas":  10,
+                  "equipe":  "DEV - LEO",
+                  "status":  "Ativo"
+              },
+    "MEZZOW":  {
+                   "horas":  0,
+                   "equipe":  "SRE - TORINO",
+                   "status":  "Suspenso"
+               },
+    "MONITORY":  {
+                     "horas":  5,
+                     "equipe":  "SRE - TORINO",
+                     "status":  "Ativo"
+                 },
+    "MULTIMOVEIS":  {
+                        "horas":  5,
+                        "equipe":  "SRE - PRATO",
+                        "status":  "Ativo"
+                    },
+    "MULTPEX":  {
+                    "horas":  5,
+                    "equipe":  "SRE - PRATO",
+                    "status":  "Ativo"
+                },
+    "NGX":  {
+                "horas":  0,
+                "equipe":  "SRE - PRATO",
+                "status":  "Suspenso"
+            },
+    "NITZSCHE":  {
+                     "horas":  10,
+                     "equipe":  "SRE - PRATO",
+                     "status":  "Ativo"
+                 },
+    "NODE TECH":  {
+                      "horas":  10,
+                      "equipe":  "SRE - TORINO",
+                      "status":  "Ativo"
+                  },
+    "OFICIAL_FARMA":  {
+                          "horas":  20,
+                          "equipe":  "SRE - TORINO",
+                          "status":  "Ativo"
+                      },
+    "PAULISTA SERVICOS":  {
+                              "horas":  20,
+                              "equipe":  "SRE - TORINO",
+                              "status":  "Ativo"
+                          },
+    "PEEX":  {
+                 "horas":  10,
+                 "equipe":  "SRE - TORINO",
+                 "status":  "Ativo"
+             },
+    "PULSAR":  {
+                   "horas":  10,
+                   "equipe":  "SRE - TORINO",
+                   "status":  "Ativo"
+               },
+    "QUATA":  {
+                  "horas":  0,
+                  "equipe":  "SRE - TORINO",
+                  "status":  "Suspenso"
+              },
+    "REALS BET":  {
+                      "horas":  20,
+                      "equipe":  "SRE - PRATO",
+                      "status":  "Ativo"
+                  },
+    "RESERVA":  {
+                    "horas":  120,
+                    "equipe":  "SRE - TORINO",
+                    "status":  "Ativo"
+                },
+    "RIO VERDE":  {
+                      "horas":  10,
+                      "equipe":  "SRE - PRATO",
+                      "status":  "Ativo"
+                  },
+    "ROBERTY APP":  {
+                        "horas":  10,
+                        "equipe":  "SRE - TORINO",
+                        "status":  "Ativo"
+                    },
+    "SINAPSE":  {
+                    "horas":  5,
+                    "equipe":  "SRE - PRATO",
+                    "status":  "Ativo"
+                },
+    "SINCRONISMO":  {
+                        "horas":  10,
+                        "equipe":  "SRE - PRATO",
+                        "status":  "Ativo"
+                    },
+    "SISTEMATIZZE":  {
+                         "horas":  5,
+                         "equipe":  "SRE - PRATO",
+                         "status":  "Ativo"
+                     },
+    "SMCLICK":  {
+                    "horas":  5,
+                    "equipe":  "SRE - PRATO",
+                    "status":  "Ativo"
+                },
+    "SPANI":  {
+                  "horas":  10,
+                  "equipe":  "DEV - LEO",
+                  "status":  "Ativo"
+              },
+    "TALK RADIO":  {
+                       "horas":  10,
+                       "equipe":  "SRE - PRATO",
+                       "status":  "Ativo"
+                   },
+    "TELTELECOM":  {
+                       "horas":  10,
+                       "equipe":  "SRE - TORINO",
+                       "status":  "Ativo"
+                   },
+    "TOPFARM":  {
+                    "horas":  0,
+                    "equipe":  "SRE - TORINO",
+                    "status":  "Suspenso"
+                },
+    "VBS":  {
+                "horas":  20,
+                "equipe":  "SRE - PRATO",
+                "status":  "Ativo"
+            },
+    "VITAFOR":  {
+                    "horas":  5,
+                    "equipe":  "SRE - TORINO",
+                    "status":  "Ativo"
+                },
+    "ZENITECH":  {
+                     "horas":  10,
+                     "equipe":  "SRE - PRATO",
+                     "status":  "Ativo"
+                 }
 }

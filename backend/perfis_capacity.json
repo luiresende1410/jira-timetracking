@@ -1,17 +1,17 @@
 {
-  "Tech Leader": {
-    "Horas Administrativas": 1.0,
-    "Horas de Apoio": 0.0,
-    "Horas Efetivas": 0.0
-  },
-  "Efetivo": {
-    "Horas Administrativas": 1.0,
-    "Horas de Apoio": 2.0,
-    "Horas Efetivas": 4.0
-  },
-  "Estagiario": {
-    "Horas Administrativas": 1.0,
-    "Horas de Estudo": 2.0,
-    "Horas Efetivas": 2.0
-  }
+    "Tech Leader":  {
+                        "Horas Administrativas":  1.0,
+                        "Horas de Apoio":  0.0,
+                        "Horas Efetivas":  0.0
+                    },
+    "Efetivo":  {
+                    "Horas Administrativas":  1.0,
+                    "Horas de Apoio":  2.0,
+                    "Horas Efetivas":  4.0
+                },
+    "Estagiario":  {
+                       "Horas Administrativas":  1.0,
+                       "Horas de Estudo":  2.0,
+                       "Horas Efetivas":  2.0
+                   }
 }
