@@ -27,7 +27,7 @@
   "Guilherme dos Santos Ramos": {
     "perfil": "Efetivo",
     "time": "SRE - PRATO",
-    "dias_ausentes": 10
+    "dias_ausentes": 0
   },
   "Iago Lucas Fernandes de Faria": {
     "perfil": "Estagiario",
@@ -57,10 +57,6 @@
     "perfil": "Tech Leader",
     "time": "PROJETOS"
   },
-  "JoÃ£o Felipe Bertini": {
-    "perfil": "Estagiario",
-    "time": "PROJETOS"
-  },
   "Kayke Peres da Costa": {
     "perfil": "Estagiario",
     "time": "PROJETOS"
@@ -72,7 +68,7 @@
   "Matheus Angelo": {
     "perfil": "Efetivo",
     "time": "PROJETOS",
-    "dias_ausentes": 3
+    "dias_ausentes": 0
   },
   "Luany Avila dos Anjos": {
     "perfil": "Estagiario",
@@ -90,7 +86,17 @@
     "dias_ausentes": 0
   },
   "Alessandro Oliveira": {
-    "perfil": "Tech Leader",
-    "time": "CEO"
+    "perfil": "Gestor",
+    "time": "GESTÃO",
+    "dias_ausentes": 0
+  },
+  "João Felipe Bertini": {
+    "perfil": "Estagiario",
+    "time": "PROJETOS"
+  },
+  "Fernando Januário da Silva Junior": {
+    "perfil": "Efetivo",
+    "time": "PROJETOS",
+    "dias_ausentes": 0
   }
 }

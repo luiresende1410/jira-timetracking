@@ -480,6 +480,7 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
                                         <th style={{ textAlign: 'left', padding: '5px 10px', color: '#545b64', fontWeight: 600, width: 100 }}>Issue</th>
                                         <th style={{ textAlign: 'left', padding: '5px 10px', color: '#545b64', fontWeight: 600 }}>Atividade</th>
                                         <th style={{ textAlign: 'left', padding: '5px 10px', color: '#545b64', fontWeight: 600, width: 120 }}>Tipo</th>
+                                         <th style={{ textAlign: 'left', padding: '5px 10px', color: '#545b64', fontWeight: 600, width: 130 }}>Status</th>
                                         <th style={{ textAlign: 'left', padding: '5px 10px', color: '#545b64', fontWeight: 600, width: 100 }}>Data</th>
                                         <th style={{ textAlign: 'right', padding: '5px 10px', color: '#545b64', fontWeight: 600, width: 80 }}>Horas</th>
                                       </tr>
@@ -495,6 +496,15 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
                                               {at.comentario && <div style={{ color: '#879596', fontSize: 11, marginTop: 2 }}>{at.comentario}</div>}
                                             </td>
                                             <td style={{ padding: '5px 10px', color: '#5f6b7a' }}>{at.issue_type || '—'}</td>
+                                             <td style={{ padding: '5px 10px' }}>
+                                               {at.issue_status ? (() => {
+                                                 const s = at.issue_status.toLowerCase();
+                                                 const color = s.includes('done') || s.includes('closed') || s.includes('resolved') ? '#037f0c'
+                                                   : s.includes('progress') || s.includes('doing') ? '#0073bb'
+                                                   : s.includes('cancel') || s.includes('won') ? '#879596' : '#545b64';
+                                                 return <span style={{ fontSize: 11, fontWeight: 600, color, background: color + '18', padding: '2px 7px', borderRadius: 10, whiteSpace: 'nowrap' }}>{at.issue_status}</span>;
+                                               })() : <span style={{ color: '#879596', fontSize: 11 }}>—</span>}
+                                             </td>
                                             <td style={{ padding: '5px 10px', color: '#879596', whiteSpace: 'nowrap' }}>
                                               {at.data_registro ? new Date(at.data_registro).toLocaleDateString('pt-BR') : '—'}
                                             </td>

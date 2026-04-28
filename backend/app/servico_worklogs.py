@@ -1,4 +1,4 @@
-import asyncio
+﻿import asyncio
 import logging
 from datetime import datetime, timezone
 from typing import Optional
@@ -78,6 +78,7 @@ class ServicoWorklogs:
                 issue_summary=issue.summary,
                 issue_key=issue.key,
                 issue_type=issue.issue_type,
+                issue_status=issue.issue_status,
                 horas_decimais=round(w.tempo_gasto_segundos / 3600, 2),
                 organizacao=issue.organizacao,
             )

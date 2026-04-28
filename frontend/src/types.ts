@@ -32,6 +32,7 @@ export interface DetalheAtividade {
   issue_key: string;
   issue_summary: string;
   issue_type?: string;
+  issue_status?: string;
   data_registro: string;
   horas: number;
   comentario?: string;

@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+﻿from pydantic import BaseModel
 from datetime import datetime, date
 from typing import Optional
 
@@ -23,6 +23,7 @@ class WorklogEnriquecido(BaseModel):
     issue_summary: str
     issue_key: str
     issue_type: Optional[str] = None
+    issue_status: Optional[str] = None
     horas_decimais: float
     organizacao: Optional[str] = None
 
@@ -48,12 +49,14 @@ class Issue(BaseModel):
     project_id: str
     organizacao: Optional[str] = None
     issue_type: Optional[str] = None
+    issue_status: Optional[str] = None
 
 
 class DetalheAtividade(BaseModel):
     issue_key: str
     issue_summary: str
     issue_type: Optional[str] = None
+    issue_status: Optional[str] = None
     data_registro: date
     horas: float
     comentario: Optional[str] = None

@@ -148,6 +148,17 @@ async def relatorio_completo(
     capacity_data = calcular_capacity(data_inicio, data_fim)
     colaboradores_report = _gerador.relatorio_por_colaborador(worklogs)
 
+    # Normalizar nomes com dupla codificacao UTF-8 (problema do Jira)
+    def fix_encoding(s: str) -> str:
+        try:
+            return s.encode('latin1').decode('utf-8')
+        except Exception:
+            return s
+
+    # Normalizar nomes nos relatorios
+    for c in colaboradores_report:
+        c.nome_colaborador = fix_encoding(c.nome_colaborador)
+
     # Mapear horas reais por nome de colaborador
     horas_reais_map = {c.nome_colaborador: c.total_horas for c in colaboradores_report}
 

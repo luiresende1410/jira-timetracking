@@ -1,4 +1,4 @@
-from collections import defaultdict
+﻿from collections import defaultdict
 from datetime import date
 from typing import Optional
 
@@ -44,6 +44,7 @@ class GeradorRelatorios:
                         issue_key=w.issue_key,
                         issue_summary=w.issue_summary,
                         issue_type=w.issue_type,
+                        issue_status=w.issue_status,
                         data_registro=w.worklog.data_inicio.date(),
                         horas=w.horas_decimais,
                         comentario=w.worklog.comentario,
