@@ -1,90 +1,93 @@
-{
-  "Bruno Loschi": {
-    "perfil": "Estagiario",
-    "time": "SRE - TORINO"
-  },
-  "Gabriel Abramo": {
-    "perfil": "Efetivo",
-    "time": "SRE - TORINO"
-  },
-  "Lucas Torino": {
-    "perfil": "Efetivo",
-    "time": "SRE - TORINO"
-  },
-  "Vinicius Rodrigues dos Santos": {
-    "perfil": "Estagiario",
-    "time": "SRE - TORINO"
-  },
-  "Vitor da Silva Sant'ana": {
-    "perfil": "Efetivo",
-    "time": "SRE - TORINO"
-  },
-  "Felipe Vieira da Silva": {
-    "perfil": "Estagiario",
-    "time": "SRE - PRATO"
-  },
-  "Guilherme dos Santos Ramos": {
-    "perfil": "Efetivo",
-    "time": "SRE - PRATO"
-  },
-  "Iago Lucas Fernandes de Faria": {
-    "perfil": "Estagiario",
-    "time": "SRE - PRATO"
-  },
-  "Leonardo Miranda": {
-    "perfil": "Tech Leader",
-    "time": "SRE - PRATO"
-  },
-  "Lucas Ortiz": {
-    "perfil": "Efetivo",
-    "time": "SRE - PRATO"
-  },
-  "Andre Novaes": {
-    "perfil": "Estagiario",
-    "time": "PROJETOS"
-  },
-  "Gustavo Kowalski": {
-    "perfil": "Estagiario",
-    "time": "PROJETOS"
-  },
-  "Gustavo Silva": {
-    "perfil": "Efetivo",
-    "time": "PROJETOS"
-  },
-  "Jefferson Silva": {
-    "perfil": "Tech Leader",
-    "time": "PROJETOS"
-  },
-  "João Felipe Bertini": {
-    "perfil": "Estagiario",
-    "time": "PROJETOS"
-  },
-  "Kayke Peres da Costa": {
-    "perfil": "Estagiario",
-    "time": "PROJETOS"
-  },
-  "Kayky Stiliano": {
-    "perfil": "Estagiario",
-    "time": "PROJETOS"
-  },
-  "Matheus Angelo": {
-    "perfil": "Efetivo",
-    "time": "PROJETOS"
-  },
-  "Luany Avila dos Anjos": {
-    "perfil": "Estagiario",
-    "time": "DEV - LÉO"
-  },
-  "Matheus Nascimento": {
-    "perfil": "Estagiario",
-    "time": "DEV - LÉO"
-  },
-  "Nattan Souza": {
-    "perfil": "Estagiario",
-    "time": "DEV - LÉO"
-  },
-  "Alessandro Oliveira": {
-    "perfil": "Estagiario",
-    "time": "GESTÃO "
-  }
+﻿{
+    "Bruno Loschi":  {
+                         "perfil":  "Estagiario",
+                         "time":  "SRE - TORINO",
+                         "dias_ausentes":  0
+                     },
+    "Gabriel Abramo":  {
+                           "perfil":  "Efetivo",
+                           "time":  "SRE - TORINO"
+                       },
+    "Lucas Torino":  {
+                         "perfil":  "Efetivo",
+                         "time":  "SRE - TORINO"
+                     },
+    "Vinicius Rodrigues dos Santos":  {
+                                          "perfil":  "Estagiario",
+                                          "time":  "SRE - TORINO"
+                                      },
+    "Vitor da Silva Sant\u0027ana":  {
+                                         "perfil":  "Efetivo",
+                                         "time":  "SRE - TORINO"
+                                     },
+    "Felipe Vieira da Silva":  {
+                                   "perfil":  "Estagiario",
+                                   "time":  "SRE - PRATO"
+                               },
+    "Guilherme dos Santos Ramos":  {
+                                       "perfil":  "Efetivo",
+                                       "time":  "SRE - PRATO",
+                                       "dias_ausentes":  0
+                                   },
+    "Iago Lucas Fernandes de Faria":  {
+                                          "perfil":  "Estagiario",
+                                          "time":  "SRE - PRATO"
+                                      },
+    "Leonardo Miranda":  {
+                             "perfil":  "Tech Leader",
+                             "time":  "SRE - PRATO"
+                         },
+    "Lucas Ortiz":  {
+                        "perfil":  "Efetivo",
+                        "time":  "SRE - PRATO"
+                    },
+    "Andre Novaes":  {
+                         "perfil":  "Estagiario",
+                         "time":  "PROJETOS"
+                     },
+    "Gustavo Kowalski":  {
+                             "perfil":  "Estagiario",
+                             "time":  "PROJETOS"
+                         },
+    "Gustavo Silva":  {
+                          "perfil":  "Efetivo",
+                          "time":  "PROJETOS"
+                      },
+    "Jefferson Silva":  {
+                            "perfil":  "Tech Leader",
+                            "time":  "PROJETOS"
+                        },
+    "JoÃ£o Felipe Bertini":  {
+                                 "perfil":  "Estagiario",
+                                 "time":  "PROJETOS"
+                             },
+    "Kayke Peres da Costa":  {
+                                 "perfil":  "Estagiario",
+                                 "time":  "PROJETOS"
+                             },
+    "Kayky Stiliano":  {
+                           "perfil":  "Estagiario",
+                           "time":  "PROJETOS"
+                       },
+    "Matheus Angelo":  {
+                           "perfil":  "Efetivo",
+                           "time":  "PROJETOS",
+                           "dias_ausentes":  0
+                       },
+    "Luany Avila dos Anjos":  {
+                                  "perfil":  "Estagiario",
+                                  "time":  "DEV - LÃ‰O"
+                              },
+    "Matheus Nascimento":  {
+                               "perfil":  "Estagiario",
+                               "time":  "DEV - LÃ‰O"
+                           },
+    "Nattan Souza":  {
+                         "perfil":  "Estagiario",
+                         "time":  "DEV - LÃ‰O"
+                     },
+    "Alessandro Oliveira":  {
+                                "perfil":  "Tech Leader",
+                                "time":  "CEO"
+                            }
 }
