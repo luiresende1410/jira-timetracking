@@ -1,4 +1,5 @@
-﻿import osimport json
+﻿import os
+import json
 
 import logging
 from pydantic import BaseModel
@@ -189,6 +190,7 @@ async def relatorio_completo(
 class ColaboradorUpdate(BaseModel):
     perfil: str
     time: str
+    dias_ausentes: int = 0
 
 
 @app.get("/api/colaboradores")
@@ -198,7 +200,7 @@ async def get_colaboradores():
 
 @app.put("/api/colaboradores/{nome}")
 async def put_colaborador(nome: str, body: ColaboradorUpdate):
-    return atualizar_colaborador(nome, body.perfil, body.time)
+    return atualizar_colaborador(nome, body.perfil, body.time, body.dias_ausentes)
 
 
 @app.delete("/api/colaboradores/{nome}")
@@ -369,6 +371,7 @@ async def delete_perfil_capacity(perfil: str):
 async def shutdown():
     if _cliente:
         await _cliente.close()
+
 
 
 

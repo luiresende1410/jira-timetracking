@@ -68,6 +68,7 @@ export async function getRelatorioCompleto(dataInicio: string, dataFim: string) 
 export interface ColaboradorConfig {
   perfil: string;
   time: string;
+  dias_ausentes?: number;
 }
 
 export interface CapacityColaborador {
@@ -90,10 +91,10 @@ export async function getColaboradores() {
   return request<Record<string, ColaboradorConfig>>(API + '/colaboradores');
 }
 
-export async function updateColaborador(nome: string, perfil: string, time: string) {
+export async function updateColaborador(nome: string, perfil: string, time: string, dias_ausentes: number = 0) {
   return request<ColaboradorConfig>(
     API + '/colaboradores/' + encodeURIComponent(nome),
-    { method: 'PUT', body: JSON.stringify({ perfil, time }) }
+    { method: 'PUT', body: JSON.stringify({ perfil, time, dias_ausentes }) }
   );
 }
 
@@ -200,3 +201,4 @@ export async function deletePerfilCapacity(perfil: string) {
     { method: 'DELETE' }
   );
 }
+

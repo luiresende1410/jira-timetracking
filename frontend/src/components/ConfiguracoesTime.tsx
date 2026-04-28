@@ -25,6 +25,7 @@ interface ColaboradorFormState {
   nome: string;
   perfil: string;
   time: string;
+  dias_ausentes: number;
 }
 
 interface ColaboradorFormErrors {
@@ -102,7 +103,7 @@ const modalActionsStyle: React.CSSProperties = {
   marginTop: 24,
 };
 
-const FORM_COLAB_VAZIO: ColaboradorFormState = { nome: '', perfil: 'Efetivo', time: '' };
+const FORM_COLAB_VAZIO: ColaboradorFormState = { nome: '', perfil: 'Efetivo', time: '', dias_ausentes: 0 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -198,8 +199,8 @@ export default function ConfiguracoesTime() {
     setSalvando(true);
     const nomeTrimmed = formAddColab.nome.trim();
     try {
-      await updateColaborador(nomeTrimmed, formAddColab.perfil, formAddColab.time.trim());
-      setColaboradores(prev => ({ ...prev, [nomeTrimmed]: { perfil: formAddColab.perfil, time: formAddColab.time.trim() } }));
+      await updateColaborador(nomeTrimmed, formAddColab.perfil, formAddColab.time.trim(), formAddColab.dias_ausentes);
+      setColaboradores(prev => ({ ...prev, [nomeTrimmed]: { perfil: formAddColab.perfil, time: formAddColab.time.trim(), dias_ausentes: formAddColab.dias_ausentes } }));
       setNotification({ type: 'success', message: `Colaborador "${nomeTrimmed}" adicionado com sucesso.` });
       fecharAddColab();
     } catch (err) {
@@ -214,7 +215,7 @@ export default function ConfiguracoesTime() {
   function abrirEditColab(nome: string) {
     const c = colaboradores[nome];
     if (!c) return;
-    setFormEditColab({ nome, perfil: c.perfil, time: c.time });
+    setFormEditColab({ nome, perfil: c.perfil, time: c.time, dias_ausentes: c.dias_ausentes ?? 0 });
     setErrosEditColab({});
     setModalEditColab(nome);
   }
@@ -232,8 +233,8 @@ export default function ConfiguracoesTime() {
     setSalvando(true);
     const nome = modalEditColab!;
     try {
-      await updateColaborador(nome, formEditColab.perfil, formEditColab.time.trim());
-      setColaboradores(prev => ({ ...prev, [nome]: { perfil: formEditColab.perfil, time: formEditColab.time.trim() } }));
+      await updateColaborador(nome, formEditColab.perfil, formEditColab.time.trim(), formEditColab.dias_ausentes);
+      setColaboradores(prev => ({ ...prev, [nome]: { perfil: formEditColab.perfil, time: formEditColab.time.trim(), dias_ausentes: formEditColab.dias_ausentes } }));
       setNotification({ type: 'success', message: `Colaborador "${nome}" atualizado com sucesso.` });
       fecharEditColab();
     } catch (err) {
@@ -443,13 +444,14 @@ export default function ConfiguracoesTime() {
                   <th style={{ textAlign: 'left', padding: '10px 16px', fontSize: 13, color: '#545b64', fontWeight: 600 }}>Nome</th>
                   <th style={{ textAlign: 'left', padding: '10px 12px', fontSize: 13, color: '#545b64', fontWeight: 600 }}>Perfil</th>
                   <th style={{ textAlign: 'left', padding: '10px 12px', fontSize: 13, color: '#545b64', fontWeight: 600 }}>Time</th>
+                  <th style={{ textAlign: 'center', padding: '10px 12px', fontSize: 13, color: '#545b64', fontWeight: 600 }}>Dias Ausentes</th>
                   <th style={{ textAlign: 'center', padding: '10px 12px', fontSize: 13, color: '#545b64', fontWeight: 600 }}>Acoes</th>
                 </tr>
               </thead>
               <tbody>
                 {colaboradoresFiltrados.length === 0 ? (
                   <tr>
-                    <td colSpan={4} style={{ padding: '24px 16px', textAlign: 'center', color: '#879596', fontSize: 13 }}>
+                    <td colSpan={5} style={{ padding: '24px 16px', textAlign: 'center', color: '#879596', fontSize: 13 }}>
                       Nenhum colaborador encontrado.
                     </td>
                   </tr>
@@ -459,6 +461,15 @@ export default function ConfiguracoesTime() {
                       <td style={{ padding: '10px 16px', fontSize: 13, fontWeight: 600 }}>{row.nome}</td>
                       <td style={{ padding: '10px 12px', fontSize: 13, color: '#5f6b7a' }}>{row.perfil}</td>
                       <td style={{ padding: '10px 12px', fontSize: 13, color: '#5f6b7a' }}>{row.time}</td>
+                      <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                        {(row.dias_ausentes ?? 0) > 0 ? (
+                          <span style={{ background: '#fff3cd', color: '#856404', padding: '2px 8px', borderRadius: 10, fontSize: 12, fontWeight: 600 }}>
+                            {row.dias_ausentes}d
+                          </span>
+                        ) : (
+                          <span style={{ color: '#879596', fontSize: 12 }}>—</span>
+                        )}
+                      </td>
                       <td style={{ padding: '10px 12px', textAlign: 'center' }}>
                         <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
                           <Button variant="inline-link" onClick={() => abrirEditColab(row.nome)}>
@@ -595,6 +606,21 @@ export default function ConfiguracoesTime() {
               {errosAddColab.time && <div style={errorMsgStyle}>{errosAddColab.time}</div>}
             </div>
 
+            <div style={fieldStyle}>
+              <label style={labelStyle}>Dias Ausentes no Período</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  type="number"
+                  min={0}
+                  value={formAddColab.dias_ausentes}
+                  onChange={e => setFormAddColab(f => ({ ...f, dias_ausentes: Math.max(0, Number(e.target.value)) }))}
+                  style={{ ...inputStyle, maxWidth: 100 }}
+                  placeholder="0"
+                />
+                <span style={{ fontSize: 12, color: '#879596' }}>dias (férias, faltas, etc.)</span>
+              </div>
+            </div>
+
             <div style={modalActionsStyle}>
               <Button variant="link" onClick={fecharAddColab} disabled={salvando}>
                 Cancelar
@@ -644,6 +670,21 @@ export default function ConfiguracoesTime() {
                 style={{ ...inputStyle, borderColor: errosEditColab.time ? '#d13212' : '#aab7b8' }}
               />
               {errosEditColab.time && <div style={errorMsgStyle}>{errosEditColab.time}</div>}
+            </div>
+
+            <div style={fieldStyle}>
+              <label style={labelStyle}>Dias Ausentes no Período</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  type="number"
+                  min={0}
+                  value={formEditColab.dias_ausentes}
+                  onChange={e => setFormEditColab(f => ({ ...f, dias_ausentes: Math.max(0, Number(e.target.value)) }))}
+                  style={{ ...inputStyle, maxWidth: 100 }}
+                  placeholder="0"
+                />
+                <span style={{ fontSize: 12, color: '#879596' }}>dias (férias, faltas, etc.)</span>
+              </div>
             </div>
 
             <div style={modalActionsStyle}>
@@ -834,6 +875,7 @@ export default function ConfiguracoesTime() {
       )}    </SpaceBetween>
   );
 }
+
 
 
 

@@ -28,9 +28,15 @@ def listar_colaboradores() -> dict:
     return _carregar_colaboradores()
 
 
-def atualizar_colaborador(nome: str, perfil: str, time: str) -> dict:
+def atualizar_colaborador(nome: str, perfil: str, time: str, dias_ausentes: int = 0) -> dict:
     data = _carregar_colaboradores()
-    data[nome] = {"perfil": perfil, "time": time}
+    # Preservar dias_ausentes existente se nao for passado explicitamente
+    existente = data.get(nome, {})
+    data[nome] = {
+        "perfil": perfil,
+        "time": time,
+        "dias_ausentes": dias_ausentes if dias_ausentes > 0 else existente.get("dias_ausentes", 0),
+    }
     _salvar_colaboradores(data)
     return data[nome]
 
@@ -128,10 +134,13 @@ def calcular_capacity(periodo_inicio: date, periodo_fim: date) -> dict:
         time = info.get("time", "A definir")
         categorias = perfis_capacity.get(perfil, perfil_efetivo_fallback)
 
+        dias_ausentes = info.get("dias_ausentes", 0)
+        dias_efetivos = max(0, dias_uteis - dias_ausentes)
+
         capacity = {}
         total_provisionado = 0.0
         for categoria, horas_dia in categorias.items():
-            horas = round(horas_dia * dias_uteis, 1)
+            horas = round(horas_dia * dias_efetivos, 1)
             capacity[categoria] = horas
             total_provisionado += horas
 
@@ -139,9 +148,11 @@ def calcular_capacity(periodo_inicio: date, periodo_fim: date) -> dict:
             "nome": nome,
             "perfil": perfil,
             "time": time,
+            "dias_ausentes": dias_ausentes,
             "capacity": capacity,
             "total_provisionado": round(total_provisionado, 1),
         })
 
     return resultado
+
 
