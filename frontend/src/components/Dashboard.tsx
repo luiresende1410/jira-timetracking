@@ -109,6 +109,7 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
     });
   };
   const [mspCapacity, setMspCapacity] = useState<Record<string, ClienteMSP>>({});
+  const [capacitySort, setCapacitySort] = useState<{ key: string; dir: 'asc' | 'desc' }>({ key: 'time', dir: 'asc' });
 
   const MSP_PROJETO = 'CloudDog - Suporte SRE';
   const projetosFiltrados = useMemo(() => {
@@ -288,18 +289,29 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ borderBottom: "2px solid #e9ebed" }}>
-                  <th style={{ textAlign: "left", padding: "10px 12px", fontSize: 13, color: "#545b64", fontWeight: 600 }}>Colaborador</th>
-                  <th style={{ textAlign: "left", padding: "10px 12px", fontSize: 13, color: "#545b64", fontWeight: 600 }}>Time</th>
-                  <th style={{ textAlign: "left", padding: "10px 12px", fontSize: 13, color: "#545b64", fontWeight: 600 }}>Perfil</th>
-                  <th style={{ textAlign: "right", padding: "10px 12px", fontSize: 13, color: "#545b64", fontWeight: 600 }}>Provisionado</th>
-                  <th style={{ textAlign: "right", padding: "10px 12px", fontSize: 13, color: "#545b64", fontWeight: 600 }}>Realizado</th>
-                  <th style={{ textAlign: "right", padding: "10px 12px", fontSize: 13, color: "#545b64", fontWeight: 600 }}>Diferença</th>
-                  <th style={{ textAlign: "right", padding: "10px 12px", fontSize: 13, color: "#545b64", fontWeight: 600 }}>%</th>
-                  <th style={{ textAlign: "center", padding: "10px 12px", fontSize: 13, color: "#545b64", fontWeight: 600 }}>Status</th>
+                  {[
+                    { key: 'nome', label: 'Colaborador', align: 'left' },
+                    { key: 'time', label: 'Time', align: 'left' },
+                    { key: 'perfil', label: 'Perfil', align: 'left' },
+                    { key: 'horas_provisionadas', label: 'Provisionado', align: 'right' },
+                    { key: 'horas_reais', label: 'Realizado', align: 'right' },
+                    { key: 'diferenca', label: 'Diferença', align: 'right' },
+                    { key: 'percentual_utilizacao', label: '%', align: 'right' },
+                    { key: 'status', label: 'Status', align: 'center' },
+                  ].map(col => (
+                    <th
+                      key={col.key}
+                      onClick={() => setCapacitySort(prev => ({ key: col.key, dir: prev.key === col.key && prev.dir === 'asc' ? 'desc' : 'asc' }))}
+                      style={{ textAlign: col.align as 'left' | 'right' | 'center', padding: '10px 12px', fontSize: 13, color: '#0073bb', fontWeight: 600, cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' }}
+                    >
+                      {col.label}
+                      {capacitySort.key === col.key ? (capacitySort.dir === 'asc' ? ' ▲' : ' ▼') : ' ⇅'}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {capacityVsReal.sort((a, b) => a.time.localeCompare(b.time) || a.nome.localeCompare(b.nome)).map(c => (
+                {[...capacityVsReal].sort((a, b) => { const k = capacitySort.key as keyof typeof a; const va = a[k], vb = b[k]; const cmp = typeof va === 'number' && typeof vb === 'number' ? (va as number) - (vb as number) : String(va).localeCompare(String(vb)); return capacitySort.dir === 'asc' ? cmp : -cmp; }).map(c => (
                   <tr key={c.nome} style={{ borderBottom: "1px solid #e9ebed" }}>
                     <td style={{ padding: "8px 12px", fontSize: 13 }}>{c.nome}</td>
                     <td style={{ padding: "8px 12px", fontSize: 12, color: "#5f6b7a" }}>{c.time}</td>
