@@ -491,7 +491,7 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
                                         .sort((a, b) => new Date(b.data_registro).getTime() - new Date(a.data_registro).getTime())
                                         .map((at, i) => (
                                           <tr key={i} style={{ borderBottom: '1px solid #e9ebed', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
-                                             <td style={{ padding: '5px 10px', whiteSpace: 'nowrap' }}><a href={`https://clouddog.atlassian.net/browse/`} target="_blank" rel="noopener noreferrer" style={{ color: '#0073bb', fontWeight: 600, textDecoration: 'none' }} onMouseOver={e => (e.currentTarget.style.textDecoration='underline')} onMouseOut={e => (e.currentTarget.style.textDecoration='none')}>{at.issue_key}</a></td>
+                                             <td style={{ padding: '5px 10px', whiteSpace: 'nowrap' }}><a href={'https://clouddog.atlassian.net/browse/' + at.issue_key} target="_blank" rel="noopener noreferrer" style={{ color: '#0073bb', fontWeight: 600, textDecoration: 'none' }} onMouseOver={e => (e.currentTarget.style.textDecoration='underline')} onMouseOut={e => (e.currentTarget.style.textDecoration='none')}>{at.issue_key}</a></td>
                                             <td style={{ padding: '5px 10px', color: '#16191f', maxWidth: 500 }}>
                                               <div>{at.issue_summary}</div>
                                               {at.comentario && <div style={{ color: '#879596', fontSize: 11, marginTop: 2 }}>{at.comentario}</div>}
@@ -898,7 +898,7 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
                 <tbody>
                   {orgData.tickets.map((ticket: TicketAWS) => (
                     <tr key={ticket.key} style={{ borderBottom: '1px solid #e9ebed' }}>
-                      <td style={{ padding: '7px 12px', fontSize: 12, whiteSpace: 'nowrap' }}><a href={`https://clouddog.atlassian.net/browse/`} target="_blank" rel="noopener noreferrer" style={{ color: '#0073bb', fontWeight: 600, textDecoration: 'none' }} onMouseOver={e => (e.currentTarget.style.textDecoration='underline')} onMouseOut={e => (e.currentTarget.style.textDecoration='none')}>{ticket.key}</a></td>
+                      <td style={{ padding: '7px 12px', fontSize: 12, whiteSpace: 'nowrap' }}><a href={'https://clouddog.atlassian.net/browse/' + ticket.key} target="_blank" rel="noopener noreferrer" style={{ color: '#0073bb', fontWeight: 600, textDecoration: 'none' }} onMouseOver={e => (e.currentTarget.style.textDecoration='underline')} onMouseOut={e => (e.currentTarget.style.textDecoration='none')}>{ticket.key}</a></td>
                       <td style={{ padding: '7px 12px', fontSize: 12, maxWidth: 400 }}>{ticket.summary}</td>
                       <td style={{ padding: '7px 12px', fontSize: 11, color: '#5f6b7a' }}>{ticket.issue_type}</td>
                       <td style={{ padding: '7px 12px', fontSize: 12 }}>
