@@ -110,6 +110,7 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
   };
   const [mspCapacity, setMspCapacity] = useState<Record<string, ClienteMSP>>({});
   const [capacitySort, setCapacitySort] = useState<{ key: string; dir: 'asc' | 'desc' }>({ key: 'time', dir: 'asc' });
+  const [mspSort, setMspSort] = useState<{ key: string; dir: 'asc' | 'desc' }>({ key: 'horasTrabalhadas', dir: 'desc' });
 
   const MSP_PROJETO = 'CloudDog - Suporte SRE';
   const projetosFiltrados = useMemo(() => {
@@ -584,6 +585,7 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
       const statusOk = filtroStatusMSP.size === 0 || !filtroStatusMSP.has(r.statusContrato);
       return textoOk && statusOk;
     });
+    const rowsOrdenados = [...rowsFiltrados].sort((a, b) => { const va = (a as Record<string,unknown>)[mspSort.key]; const vb = (b as Record<string,unknown>)[mspSort.key]; const cmp = typeof va === 'number' && typeof vb === 'number' ? (va as number) - (vb as number) : String(va).localeCompare(String(vb)); return mspSort.dir === 'asc' ? cmp : -cmp; });
 
     // Totais por equipe
     const getStatusColor = (pct: number, status: string) => {
@@ -656,19 +658,29 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid #e9ebed', background: '#f2f3f3' }}>
-                <th style={{ textAlign: 'left',   padding: '10px 16px', fontSize: 13, color: '#545b64', fontWeight: 600 }}>Cliente</th>
-                <th style={{ textAlign: 'left',   padding: '10px 12px', fontSize: 13, color: '#545b64', fontWeight: 600 }}>Equipe</th>
-                <th style={{ textAlign: 'center', padding: '10px 12px', fontSize: 13, color: '#545b64', fontWeight: 600 }}>Contrato</th>
-                <th style={{ textAlign: 'right',  padding: '10px 12px', fontSize: 13, color: '#545b64', fontWeight: 600 }}>Contratado/mês</th>
-                <th style={{ textAlign: 'right',  padding: '10px 12px', fontSize: 13, color: '#545b64', fontWeight: 600 }}>Previsto período</th>
-                <th style={{ textAlign: 'right',  padding: '10px 12px', fontSize: 13, color: '#545b64', fontWeight: 600 }}>Trabalhado</th>
-                <th style={{ textAlign: 'right',  padding: '10px 12px', fontSize: 13, color: '#545b64', fontWeight: 600 }}>%</th>
-                <th style={{ padding: '10px 12px', width: 140, fontSize: 13, color: '#545b64', fontWeight: 600 }}>Progresso</th>
-                <th style={{ textAlign: 'center', padding: '10px 12px', fontSize: 13, color: '#545b64', fontWeight: 600 }}>Status</th>
+                {[
+                  { key: 'cliente', label: 'Cliente', align: 'left' },
+                  { key: 'equipe', label: 'Equipe', align: 'left' },
+                  { key: 'statusContrato', label: 'Contrato', align: 'center' },
+                  { key: 'horasContratadas', label: 'Contratado/mês', align: 'right' },
+                  { key: 'horasContratadas_periodo', label: 'Previsto período', align: 'right' },
+                  { key: 'horasTrabalhadas', label: 'Trabalhado', align: 'right' },
+                  { key: 'pct', label: '%', align: 'right' },
+                  { key: '_progresso', label: 'Progresso', align: 'left', noSort: true },
+                  { key: '_status', label: 'Status', align: 'center', noSort: true },
+                ].map(col => (
+                  <th
+                    key={col.key}
+                    onClick={() => !col.noSort && setMspSort(prev => ({ key: col.key, dir: prev.key === col.key && prev.dir === 'asc' ? 'desc' : 'asc' }))}
+                    style={{ textAlign: col.align as 'left'|'right'|'center', padding: col.key === 'cliente' ? '10px 16px' : '10px 12px', fontSize: 13, color: col.noSort ? '#545b64' : '#0073bb', fontWeight: 600, cursor: col.noSort ? 'default' : 'pointer', userSelect: 'none', whiteSpace: 'nowrap', width: col.key === '_progresso' ? 140 : undefined }}
+                  >
+                    {col.label}{!col.noSort && (mspSort.key === col.key ? (mspSort.dir === 'asc' ? ' ▲' : ' ▼') : ' ⇅')}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {rowsFiltrados.map(row => {
+              {rowsOrdenados.map(row => {
                 const cor = getStatusColor(row.pct, row.statusContrato);
                 const { type: stType, label: stLabel } = getStatusLabel(row.pct, row.statusContrato, row.horasTrabalhadas);
                 const isSusp = row.statusContrato === 'Suspenso';
