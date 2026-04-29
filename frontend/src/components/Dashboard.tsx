@@ -986,7 +986,7 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
             {!loading && (<>
               <div style={{ display: 'flex', gap: 0, borderBottom: '2px solid #e9ebed', marginBottom: 16 }}>
                 {(['resumo','projetos','clientes','tickets','capacity','configuracoes'] as const).map(t => (
-                  <button key={t} onClick={() => setTab(t)} style={{
+                  <button key={t} onClick={() => { if (tab === 'configuracoes' && t !== 'configuracoes') { buscar(); buscarMspCapacity(); } setTab(t); }} style={{
                     padding: '10px 20px', background: 'none', border: 'none',
                     color: tab === t ? '#0073bb' : '#545b64',
                     borderBottom: tab === t ? '3px solid #0073bb' : '3px solid transparent',
