@@ -10,7 +10,8 @@
   },
   "Lucas Torino": {
     "perfil": "Efetivo",
-    "time": "SRE - TORINO"
+    "time": "SRE - TORINO",
+    "dias_ausentes": 1
   },
   "Vinicius Rodrigues dos Santos": {
     "perfil": "Estagiario",
@@ -27,7 +28,7 @@
   "Guilherme dos Santos Ramos": {
     "perfil": "Efetivo",
     "time": "SRE - PRATO",
-    "dias_ausentes": 0
+    "dias_ausentes": 10
   },
   "Iago Lucas Fernandes de Faria": {
     "perfil": "Estagiario",
@@ -35,7 +36,8 @@
   },
   "Leonardo Miranda": {
     "perfil": "Tech Leader",
-    "time": "SRE - PRATO"
+    "time": "GESTÃO",
+    "dias_ausentes": 0
   },
   "Lucas Ortiz": {
     "perfil": "Efetivo",
@@ -43,60 +45,67 @@
   },
   "Andre Novaes": {
     "perfil": "Estagiario",
-    "time": "PROJETOS"
+    "time": "PROJETOS - GCP",
+    "dias_ausentes": 0
   },
   "Gustavo Kowalski": {
     "perfil": "Estagiario",
-    "time": "PROJETOS"
+    "time": "PROJETOS - GCP",
+    "dias_ausentes": 0
   },
   "Gustavo Silva": {
     "perfil": "Efetivo",
-    "time": "PROJETOS"
+    "time": "PROJETOS - AWS",
+    "dias_ausentes": 2
   },
   "Jefferson Silva": {
     "perfil": "Tech Leader",
-    "time": "PROJETOS"
+    "time": "GESTÃO",
+    "dias_ausentes": 0
   },
   "Kayke Peres da Costa": {
     "perfil": "Estagiario",
-    "time": "PROJETOS"
+    "time": "PROJETOS - AWS",
+    "dias_ausentes": 0
   },
   "Kayky Stiliano": {
     "perfil": "Estagiario",
-    "time": "PROJETOS"
+    "time": "PROJETOS - AWS",
+    "dias_ausentes": 0
   },
   "Matheus Angelo": {
     "perfil": "Efetivo",
-    "time": "PROJETOS",
-    "dias_ausentes": 0
+    "time": "PROJETOS - AWS",
+    "dias_ausentes": 4
   },
   "Luany Avila dos Anjos": {
     "perfil": "Estagiario",
     "time": "DEV - LÉO",
-    "dias_ausentes": 0
+    "dias_ausentes": 1
   },
   "Matheus Nascimento": {
     "perfil": "Estagiario",
     "time": "DEV - LÉO",
-    "dias_ausentes": 0
+    "dias_ausentes": 1
   },
   "Nattan Souza": {
     "perfil": "Estagiario",
     "time": "DEV - LÉO",
-    "dias_ausentes": 0
+    "dias_ausentes": 1
   },
   "Alessandro Oliveira": {
     "perfil": "Gestor",
     "time": "GESTÃO",
-    "dias_ausentes": 0
+    "dias_ausentes": 22
   },
   "João Felipe Bertini": {
     "perfil": "Estagiario",
-    "time": "PROJETOS"
+    "time": "PROJETOS - AWS",
+    "dias_ausentes": 0
   },
   "Fernando Januário da Silva Junior": {
     "perfil": "Efetivo",
-    "time": "PROJETOS",
+    "time": "PROJETOS - GCP",
     "dias_ausentes": 0
   }
 }
