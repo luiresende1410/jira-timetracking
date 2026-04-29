@@ -4,9 +4,20 @@ import Conexao from './components/Conexao';
 import Dashboard from './components/Dashboard';
 import Box from "@cloudscape-design/components/box";
 import Spinner from "@cloudscape-design/components/spinner";
+import { applyMode, Mode } from "@cloudscape-design/global-styles";
 
 function App() {
   const [conectado, setConectado] = useState<boolean | null>(null);
+  const [darkMode, setDarkMode] = useState<boolean>(() => {
+    return localStorage.getItem('darkMode') === 'true';
+  });
+
+  useEffect(() => {
+    applyMode(darkMode ? Mode.Dark : Mode.Light);
+    localStorage.setItem('darkMode', String(darkMode));
+    document.body.style.backgroundColor = darkMode ? '#0f1b2d' : '';
+    document.body.style.color = darkMode ? '#d1d5db' : '';
+  }, [darkMode]);
 
   useEffect(() => {
     checkStatus()
@@ -20,7 +31,7 @@ function App() {
         <Box textAlign="center">
           <Spinner size="large" />
           <Box variant="p" margin={{ top: 's' }} color="text-status-inactive">
-            Verificando conex\u00e3o...
+            Verificando conexao...
           </Box>
         </Box>
       </div>
@@ -31,7 +42,7 @@ function App() {
     return <Conexao onConectado={() => setConectado(true)} />;
   }
 
-  return <Dashboard onDesconectado={() => setConectado(false)} />;
+  return <Dashboard onDesconectado={() => setConectado(false)} darkMode={darkMode} onToggleDarkMode={() => setDarkMode(d => !d)} />;
 }
 
 export default App;

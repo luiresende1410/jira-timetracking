@@ -30,7 +30,7 @@ import ConfiguracoesMSP from './ConfiguracoesMSP';
 import ConfiguracoesTime from './ConfiguracoesTime';
 import Spinner from "@cloudscape-design/components/spinner";
 
-interface DashboardProps { onDesconectado: () => void; }
+interface DashboardProps { onDesconectado: () => void; darkMode?: boolean; onToggleDarkMode?: () => void; }
 type SortDir = 'asc' | 'desc';
 
 function useSortable<T>(items: T[], defaultKey: keyof T, defaultDir: SortDir = 'desc') {
@@ -63,7 +63,7 @@ function getMesCorrente(): { inicio: string; fim: string } {
   };
 }
 
-export default function Dashboard({ onDesconectado }: DashboardProps) {
+export default function Dashboard({ onDesconectado, darkMode = false, onToggleDarkMode }: DashboardProps) {
   const mesCorrente = getMesCorrente();
   const [dataInicio, setDataInicio] = useState(mesCorrente.inicio);
   const [dataFim, setDataFim] = useState(mesCorrente.fim);
@@ -945,6 +945,13 @@ export default function Dashboard({ onDesconectado }: DashboardProps) {
                       </Button>
                     </>
                   )}
+                  <button
+                    onClick={onToggleDarkMode}
+                    title={darkMode ? 'Modo Claro' : 'Modo Escuro'}
+                    style={{ background: 'none', border: '1px solid #aab7b8', borderRadius: 6, padding: '6px 10px', cursor: 'pointer', fontSize: 16, lineHeight: 1, color: darkMode ? '#f0ab00' : '#545b64' }}
+                  >
+                    {darkMode ? '☀️' : '🌙'}
+                  </button>
                 </SpaceBetween>
               }
             >
