@@ -1,6 +1,7 @@
-﻿import { useState, useMemo, useEffect, useCallback } from 'react';
+﻿// build: 202604301557
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import MultiFilter from './MultiFilter';
-import { getRelatorioCompleto, getTicketsAWS, getClientesMSP, type CapacityVsReal, type OrgTickets, type TicketAWS, type ClienteMSP } from '../api';
+import { getRelatorioCompleto, getTicketsAWS, getClientesMSP, getSaldoMSP, type CapacityVsReal, type OrgTickets, type TicketAWS, type ClienteMSP } from '../api';
 import { exportCSV, exportExcel } from '../export';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -12,23 +13,24 @@ import type {
   ResumoGeral,
 } from '../types';
 
-import AppLayout from "@cloudscape-design/components/app-layout";
-import ContentLayout from "@cloudscape-design/components/content-layout";
 import Header from "@cloudscape-design/components/header";
 import Container from "@cloudscape-design/components/container";
 import SpaceBetween from "@cloudscape-design/components/space-between";
 import Button from "@cloudscape-design/components/button";
-
 import Box from "@cloudscape-design/components/box";
 import ColumnLayout from "@cloudscape-design/components/column-layout";
-import DatePicker from "@cloudscape-design/components/date-picker";
 import Alert from "@cloudscape-design/components/alert";
 import StatusIndicator from "@cloudscape-design/components/status-indicator";
-import FormField from "@cloudscape-design/components/form-field";
 import Capacity from './Capacity';
 import ConfiguracoesMSP from './ConfiguracoesMSP';
 import ConfiguracoesTime from './ConfiguracoesTime';
 import Spinner from "@cloudscape-design/components/spinner";
+import AppLayout from "@cloudscape-design/components/app-layout";
+import ContentLayout from "@cloudscape-design/components/content-layout";
+import SideNavigation from "@cloudscape-design/components/side-navigation";
+import TopNavigation from "@cloudscape-design/components/top-navigation";
+import FormField from "@cloudscape-design/components/form-field";
+import DatePicker from "@cloudscape-design/components/date-picker";
 
 interface DashboardProps { onDesconectado: () => void; darkMode?: boolean; onToggleDarkMode?: () => void; }
 type SortDir = 'asc' | 'desc';
@@ -109,6 +111,7 @@ export default function Dashboard({ onDesconectado, darkMode = false, onToggleDa
     });
   };
   const [mspCapacity, setMspCapacity] = useState<Record<string, ClienteMSP>>({});
+  const [saldoMSP, setSaldoMSP] = useState<Record<string, number>>({});
   const [capacitySort, setCapacitySort] = useState<{ key: string; dir: 'asc' | 'desc' }>({ key: 'time', dir: 'asc' });
   const [mspSort, setMspSort] = useState<{ key: string; dir: 'asc' | 'desc' }>({ key: 'horasTrabalhadas', dir: 'desc' });
 
@@ -131,8 +134,9 @@ export default function Dashboard({ onDesconectado, darkMode = false, onToggleDa
 
   const buscarMspCapacity = useCallback(async () => {
     try {
-      const d = await getClientesMSP();
+      const [d, s] = await Promise.all([getClientesMSP(), getSaldoMSP()]);
       setMspCapacity(d);
+      setSaldoMSP(s);
     } catch {
       // silencioso
     }
@@ -554,8 +558,11 @@ export default function Dashboard({ onDesconectado, darkMode = false, onToggleDa
       cliente: string;
       equipe: string;
       statusContrato: 'Ativo' | 'Suspenso' | 'Sem contrato';
+      categoria: string;
       horasContratadas: number;
       horasContratadas_periodo: number;
+      saldoAcumulado: number;
+      horasDisponiveis: number;
       horasTrabalhadas: number;
       pct: number;
       colaboradores: { nome: string; horas: number; projetos: string[] }[];
@@ -565,14 +572,21 @@ export default function Dashboard({ onDesconectado, darkMode = false, onToggleDa
       const plan = mspCapacity[nome];
       const horasTrab = horasPorCliente[nome] ?? 0;
       const horasContr = plan ? plan.horas * fatorMes : 0;
-      const pct = horasContr > 0 ? (horasTrab / horasContr) * 100 : horasTrab > 0 ? 999 : 0;
+      const saldo = saldoMSP[nome] ?? 0;
+      const horasDisp = horasContr + saldo;
+      const pct = horasDisp > 0 ? (horasTrab / horasDisp) * 100 : horasTrab > 0 ? 999 : 0;
       const clienteData = clientesFiltrados.find(c => c.cliente === nome);
+      const horas = plan?.horas ?? 0;
+      const categoria = horas >= 20 ? 'ENTERPRISE' : horas >= 10 ? 'BUSINESS' : 'BASICO';
       return {
         cliente: nome,
         equipe: plan?.equipe ?? '—',
         statusContrato: plan?.status ?? 'Sem contrato',
-        horasContratadas: plan?.horas ?? 0,
+        categoria,
+        horasContratadas: horas,
         horasContratadas_periodo: horasContr,
+        saldoAcumulado: saldo,
+        horasDisponiveis: horasDisp,
         horasTrabalhadas: horasTrab,
         pct,
         colaboradores: (clienteData?.colaboradores ?? []).map(c => ({ nome: c.nome_colaborador, horas: c.total_horas, projetos: c.projetos })),
@@ -662,8 +676,11 @@ export default function Dashboard({ onDesconectado, darkMode = false, onToggleDa
                   { key: 'cliente', label: 'Cliente', align: 'left' },
                   { key: 'equipe', label: 'Equipe', align: 'left' },
                   { key: 'statusContrato', label: 'Contrato', align: 'center' },
+                  { key: 'categoria', label: 'Categoria', align: 'center', noSort: true },
                   { key: 'horasContratadas', label: 'Contratado/mês', align: 'right' },
                   { key: 'horasContratadas_periodo', label: 'Previsto período', align: 'right' },
+                  { key: 'saldoAcumulado', label: 'Saldo', align: 'right' },
+                  { key: 'horasDisponiveis', label: 'Disponível', align: 'right' },
                   { key: 'horasTrabalhadas', label: 'Trabalhado', align: 'right' },
                   { key: 'pct', label: '%', align: 'right' },
                   { key: '_progresso', label: 'Progresso', align: 'left', noSort: true },
@@ -702,11 +719,26 @@ export default function Dashboard({ onDesconectado, darkMode = false, onToggleDa
                           {row.statusContrato}
                         </StatusIndicator>
                       </td>
+                      <td style={{ padding: '9px 12px', textAlign: 'center' }}>
+                        <span style={{
+                          fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 10,
+                          background: row.categoria === 'ENTERPRISE' ? '#0d2d5e' : row.categoria === 'BUSINESS' ? '#1a4731' : '#4a3000',
+                          color: row.categoria === 'ENTERPRISE' ? '#89bdff' : row.categoria === 'BUSINESS' ? '#6ee7b7' : '#fbbf24',
+                        }}>
+                          {row.categoria}
+                        </span>
+                      </td>
                       <td style={{ padding: '9px 12px', fontSize: 13, textAlign: 'right', color: '#5f6b7a' }}>
                         {row.horasContratadas > 0 ? `${row.horasContratadas.toFixed(0)}h` : '—'}
                       </td>
                       <td style={{ padding: '9px 12px', fontSize: 13, textAlign: 'right', color: '#5f6b7a' }}>
                         {row.horasContratadas_periodo > 0 ? `${row.horasContratadas_periodo.toFixed(1)}h` : '—'}
+                      </td>
+                      <td style={{ padding: '9px 12px', fontSize: 13, textAlign: 'right', color: row.saldoAcumulado > 0 ? '#0073bb' : '#879596', fontWeight: row.saldoAcumulado > 0 ? 600 : 400 }}>
+                        {row.saldoAcumulado > 0 ? `+${row.saldoAcumulado.toFixed(1)}h` : '—'}
+                      </td>
+                      <td style={{ padding: '9px 12px', fontSize: 13, textAlign: 'right', color: '#16191f', fontWeight: 600 }}>
+                        {row.horasDisponiveis > 0 ? `${row.horasDisponiveis.toFixed(1)}h` : '—'}
                       </td>
                       <td style={{ padding: '9px 12px', fontSize: 13, textAlign: 'right', fontWeight: 700, color: cor }}>
                         {row.horasTrabalhadas.toFixed(1)}h
@@ -729,7 +761,7 @@ export default function Dashboard({ onDesconectado, darkMode = false, onToggleDa
                       <tr key={`${row.cliente}-col-${i}`} style={{ borderBottom: '1px solid #f2f3f3', background: '#f8f9fa' }}>
                         <td style={{ padding: '6px 16px 6px 36px', fontSize: 12, color: '#0073bb' }}>{col.nome}</td>
                         <td style={{ padding: '6px 12px', fontSize: 11, color: '#879596' }} colSpan={2}>{col.projetos.join(', ')}</td>
-                        <td colSpan={4} />
+                        <td colSpan={7} />
                         <td style={{ padding: '6px 12px', fontSize: 12, textAlign: 'right', color: '#d45b07', fontWeight: 600 }}>{col.horas.toFixed(1)}h</td>
                         <td />
                       </tr>
@@ -924,100 +956,125 @@ export default function Dashboard({ onDesconectado, darkMode = false, onToggleDa
       </SpaceBetween>
     );
   };
-  return (
-    <AppLayout
-      toolsHide={true}
-      navigationHide={true}
-      content={
-        <ContentLayout
-          header={
-            <Header
-              variant="h1"
-              actions={
-                <SpaceBetween direction="horizontal" size="xs">
-                  {(resumo || colaboradores.length > 0) && (
-                    <>
-                      <Button onClick={() => exportCSV(tabId, resumo, colaboradores, projetos, clientes)} iconName="download">
-                        Exportar CSV
-                      </Button>
-                      <Button onClick={() => exportExcel(resumo, colaboradores, projetos, clientes)} iconName="download">
-                        Exportar Excel
-                      </Button>
-                    </>
-                  )}
-                  <button
-                    onClick={onToggleDarkMode}
-                    title={darkMode ? 'Modo Claro' : 'Modo Escuro'}
-                    style={{ background: 'none', border: '1px solid #aab7b8', borderRadius: 6, padding: '6px 10px', cursor: 'pointer', fontSize: 16, lineHeight: 1, color: darkMode ? '#f0ab00' : '#545b64' }}
-                  >
-                    {darkMode ? '☀️' : '🌙'}
-                  </button>
-                </SpaceBetween>
-              }
-            >
-              Timetracking
-            </Header>
-          }
-        >
-          <SpaceBetween size="l">
-            {erro && <Alert type="error" dismissible onDismiss={() => setErro('')}>{erro}</Alert>}
+  const TAB_HREF: Record<string, string> = {
+    resumo: '#resumo', projetos: '#projetos', clientes: '#clientes',
+    tickets: '#tickets', capacity: '#capacity', configuracoes: '#configuracoes',
+  };
+  const TAB_LABEL: Record<string, string> = {
+    resumo: 'Resumo', projetos: 'Projetos', clientes: 'MSP',
+    tickets: 'Tickets', capacity: 'Capacity', configuracoes: 'Configurações',
+  };
 
-            <Container>
-              <SpaceBetween size="l" direction="horizontal" alignItems="end">
-                <FormField label="Início">
-                  <DatePicker
-                    value={dataInicio}
-                    onChange={({ detail }) => setDataInicio(detail.value)}
-                    placeholder="YYYY-MM-DD"
-                  />
-                </FormField>
-                <FormField label="Fim">
-                  <DatePicker
-                    value={dataFim}
-                    onChange={({ detail }) => setDataFim(detail.value)}
-                    placeholder="YYYY-MM-DD"
-                  />
-                </FormField>
-                <Button variant="primary" onClick={() => { buscar(); buscarTickets(); }} loading={loading}>
-                  Buscar
-                </Button>
-              </SpaceBetween>
-            </Container>
-
-            {loading && (
-              <Box textAlign="center" padding="l">
-                <Spinner size="large" />
-              </Box>
-            )}
-
-            {!loading && (<>
-              <div style={{ display: 'flex', gap: 0, borderBottom: '2px solid #e9ebed', marginBottom: 16 }}>
-                {(['resumo','projetos','clientes','tickets','capacity','configuracoes'] as const).map(t => (
-                  <button key={t} onClick={() => { if (tab === 'configuracoes' && t !== 'configuracoes') { buscar(); buscarMspCapacity(); } setTab(t); }} style={{
-                    padding: '10px 20px', background: 'none', border: 'none',
-                    color: tab === t ? '#0073bb' : '#545b64',
-                    borderBottom: tab === t ? '3px solid #0073bb' : '3px solid transparent',
-                    fontWeight: tab === t ? 700 : 400, cursor: 'pointer', fontSize: 14, textTransform: 'capitalize',
-                  }}>{t === 'clientes' ? 'MSP' : t === 'tickets' ? 'Tickets' : t === 'configuracoes' ? 'Configurações' : t}</button>
-                ))}
-              </div>
-              {tab === 'resumo' && renderResumo()}
-              {tab === 'projetos' && renderProjetos()}
-              {tab === 'clientes' && renderClientes()}
-              {tab === 'tickets' && renderTickets()}
-              {tab === 'capacity' && <Capacity dataInicio={dataInicio} dataFim={dataFim} />}
-              {tab === 'configuracoes' && (
-                <SpaceBetween size="l">
-                  <ConfiguracoesMSP />
-                  <ConfiguracoesTime />
-                </SpaceBetween>
-              )}
-            </>
-            )}
-          </SpaceBetween>
-        </ContentLayout>
-      }
+  const sideNav = (
+    <SideNavigation
+      activeHref={TAB_HREF[tab]}
+      header={{ text: 'Timetracking', href: '#resumo' }}
+      onFollow={e => {
+        e.preventDefault();
+        const found = Object.entries(TAB_HREF).find(([, href]) => href === e.detail.href);
+        if (found) {
+          const nextTab = found[0];
+          if (tab === 'configuracoes' && nextTab !== 'configuracoes') { buscar(); buscarMspCapacity(); }
+          setTab(nextTab);
+        }
+      }}
+      items={[
+        { type: 'link', text: 'Resumo',          href: '#resumo' },
+        { type: 'link', text: 'Projetos',         href: '#projetos' },
+        { type: 'link', text: 'MSP',              href: '#clientes' },
+        { type: 'link', text: 'Tickets',          href: '#tickets' },
+        { type: 'link', text: 'Capacity',         href: '#capacity' },
+        { type: 'divider' },
+        { type: 'link', text: 'Configurações', href: '#configuracoes' },
+      ]}
     />
+  );
+
+  return (
+    <>
+      <TopNavigation
+        identity={{ href: '#', title: 'CloudDog — Timetracking' }}
+        utilities={[
+          ...(resumo || colaboradores.length > 0 ? [
+            {
+              type: 'button' as const,
+              text: 'CSV',
+              iconName: 'download' as const,
+              onClick: () => exportCSV(tabId, resumo, colaboradores, projetos, clientes),
+            },
+            {
+              type: 'button' as const,
+              text: 'Excel',
+              iconName: 'download' as const,
+              onClick: () => exportExcel(resumo, colaboradores, projetos, clientes),
+            },
+          ] : []),
+          {
+            type: 'button' as const,
+            iconName: darkMode ? 'status-positive' as const : 'status-pending' as const,
+            title: darkMode ? 'Modo Claro' : 'Modo Escuro',
+            onClick: onToggleDarkMode,
+          },
+        ]}
+      />
+      <AppLayout
+        toolsHide
+        navigation={sideNav}
+        content={
+          <ContentLayout
+            header={
+              <Header
+                variant="h1"
+                description={`Período: ${dataInicio} — ${dataFim}`}
+                actions={
+                  <SpaceBetween direction="horizontal" size="xs">
+                    <FormField label="Início">
+                      <DatePicker
+                        value={dataInicio}
+                        onChange={({ detail }) => setDataInicio(detail.value)}
+                        placeholder="YYYY-MM-DD"
+                      />
+                    </FormField>
+                    <FormField label="Fim">
+                      <DatePicker
+                        value={dataFim}
+                        onChange={({ detail }) => setDataFim(detail.value)}
+                        placeholder="YYYY-MM-DD"
+                      />
+                    </FormField>
+                    <Button variant="primary" onClick={() => { buscar(); buscarTickets(); }} loading={loading}>
+                      Buscar
+                    </Button>
+                  </SpaceBetween>
+                }
+              >
+                {TAB_LABEL[tab] ?? 'Timetracking'}
+              </Header>
+            }
+          >
+            <SpaceBetween size="l">
+              {erro && <Alert type="error" dismissible onDismiss={() => setErro('')}>{erro}</Alert>}
+              {loading && <Box textAlign="center" padding="l"><Spinner size="large" /></Box>}
+              {!loading && (
+                <>
+                  {tab === 'resumo' && renderResumo()}
+                  {tab === 'projetos' && renderProjetos()}
+                  {tab === 'clientes' && renderClientes()}
+                  {tab === 'tickets' && renderTickets()}
+                  {tab === 'capacity' && <Capacity dataInicio={dataInicio} dataFim={dataFim} />}
+                  {tab === 'configuracoes' && (
+                    <SpaceBetween size="l">
+                      <ConfiguracoesMSP />
+                      <ConfiguracoesTime />
+                    </SpaceBetween>
+                  )}
+                </>
+              )}
+            </SpaceBetween>
+          </ContentLayout>
+        }
+      />
+    </>
   );
 }
 

@@ -17,6 +17,24 @@ interface ClienteRow {
   horas: number;
   equipe: string;
   status: 'Ativo' | 'Suspenso';
+  categoria?: string;
+}
+
+function getCategoria(horas: number): string {
+  if (horas >= 20) return 'ENTERPRISE';
+  if (horas >= 10) return 'BUSINESS';
+  return 'BASICO';
+}
+
+function CategoriaBadge({ horas }: { horas: number }) {
+  const cat = getCategoria(horas);
+  const style: React.CSSProperties = {
+    fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 10,
+    background: cat === 'ENTERPRISE' ? '#0d2d5e' : cat === 'BUSINESS' ? '#1a4731' : '#4a3000',
+    color: cat === 'ENTERPRISE' ? '#89bdff' : cat === 'BUSINESS' ? '#6ee7b7' : '#fbbf24',
+    display: 'inline-block',
+  };
+  return <span style={style}>{cat}</span>;
 }
 
 interface FormState {
@@ -350,6 +368,7 @@ export default function ConfiguracoesMSP() {
                 <th style={{ textAlign: 'left', padding: '10px 16px', fontSize: 13, color: '#545b64', fontWeight: 600 }}>Nome</th>
                 <th style={{ textAlign: 'left', padding: '10px 12px', fontSize: 13, color: '#545b64', fontWeight: 600 }}>Equipe</th>
                 <th style={{ textAlign: 'right', padding: '10px 12px', fontSize: 13, color: '#545b64', fontWeight: 600 }}>Horas Contratadas</th>
+                <th style={{ textAlign: 'center', padding: '10px 12px', fontSize: 13, color: '#545b64', fontWeight: 600 }}>Categoria</th>
                 <th style={{ textAlign: 'center', padding: '10px 12px', fontSize: 13, color: '#545b64', fontWeight: 600 }}>Status</th>
                 <th style={{ textAlign: 'center', padding: '10px 12px', fontSize: 13, color: '#545b64', fontWeight: 600 }}>Ações</th>
               </tr>
@@ -357,7 +376,7 @@ export default function ConfiguracoesMSP() {
             <tbody>
               {clientesFiltrados.length === 0 ? (
                 <tr>
-                  <td colSpan={5} style={{ padding: '24px 16px', textAlign: 'center', color: '#879596', fontSize: 13 }}>
+                  <td colSpan={6} style={{ padding: '24px 16px', textAlign: 'center', color: '#879596', fontSize: 13 }}>
                     Nenhum cliente encontrado.
                   </td>
                 </tr>
@@ -367,6 +386,9 @@ export default function ConfiguracoesMSP() {
                     <td style={{ padding: '10px 16px', fontSize: 13, fontWeight: 600 }}>{row.nome}</td>
                     <td style={{ padding: '10px 12px', fontSize: 13, color: '#5f6b7a' }}>{row.equipe}</td>
                     <td style={{ padding: '10px 12px', fontSize: 13, textAlign: 'right' }}>{row.horas}h</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                      <CategoriaBadge horas={row.horas} />
+                    </td>
                     <td style={{ padding: '10px 12px', textAlign: 'center' }}>
                       <StatusIndicator type={row.status === 'Ativo' ? 'success' : 'stopped'}>
                         {row.status}
@@ -409,6 +431,12 @@ export default function ConfiguracoesMSP() {
                 style={{ ...inputStyle, borderColor: errosEdicao.horas ? '#d13212' : '#aab7b8' }}
               />
               {errosEdicao.horas && <div style={errorMsgStyle}>{errosEdicao.horas}</div>}
+              {formEdicao.horas && !errosEdicao.horas && (
+                <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize: 12, color: '#545b64' }}>Categoria:</span>
+                  <CategoriaBadge horas={Number(formEdicao.horas)} />
+                </div>
+              )}
             </div>
 
             <div style={fieldStyle}>
@@ -477,6 +505,12 @@ export default function ConfiguracoesMSP() {
                 style={{ ...inputStyle, borderColor: errosAdicao.horas ? '#d13212' : '#aab7b8' }}
               />
               {errosAdicao.horas && <div style={errorMsgStyle}>{errosAdicao.horas}</div>}
+              {formAdicao.horas && !errosAdicao.horas && (
+                <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize: 12, color: '#545b64' }}>Categoria:</span>
+                  <CategoriaBadge horas={Number(formAdicao.horas)} />
+                </div>
+              )}
             </div>
 
             <div style={fieldStyle}>

@@ -152,6 +152,7 @@ export interface ClienteMSP {
   horas: number;
   equipe: string;
   status: 'Ativo' | 'Suspenso';
+  categoria?: 'ENTERPRISE' | 'BUSINESS' | 'BASICO';
 }
 
 export async function getClientesMSP() {
@@ -202,3 +203,38 @@ export async function deletePerfilCapacity(perfil: string) {
   );
 }
 
+
+// ===== Saldo MSP =====
+
+export interface SaldoMSPDetalhado {
+  [cliente: string]: Array<{ mes: string; horas: number; motivo?: string }>;
+}
+
+export async function getSaldoMSP() {
+  return request<Record<string, number>>(API + '/msp/saldo');
+}
+
+export async function getSaldoMSPDetalhado() {
+  return request<SaldoMSPDetalhado>(API + '/msp/saldo/detalhado');
+}
+
+export async function fecharMesMSP(mes: string, horasTrabalhadas: Record<string, number>) {
+  return request<Record<string, unknown>>(
+    API + '/msp/fechar-mes',
+    { method: 'POST', body: JSON.stringify({ mes, horas_trabalhadas: horasTrabalhadas }) }
+  );
+}
+
+export async function ajustarSaldoMSP(nome: string, horas: number, mes: string, motivo = '') {
+  return request<{ cliente: string; saldo_total: number; entradas: unknown[] }>(
+    API + '/msp/saldo/' + encodeURIComponent(nome) + '/ajuste',
+    { method: 'POST', body: JSON.stringify({ horas, mes, motivo }) }
+  );
+}
+
+export async function zerarSaldoMSP(nome: string) {
+  return request<{ cliente: string; saldo_total: number }>(
+    API + '/msp/saldo/' + encodeURIComponent(nome),
+    { method: 'DELETE' }
+  );
+}

@@ -13,6 +13,16 @@ from .config import ConfiguracaoJira
 from .cliente_api_jira import ClienteApiJira, JiraApiError
 from .servico_worklogs import ServicoWorklogs
 from .gerador_relatorios import GeradorRelatorios
+from .saldo_msp import (
+    get_saldo_todos,
+    get_saldo_detalhado,
+    get_categoria_cliente,
+    fechar_mes,
+    ajustar_saldo_manual,
+    zerar_saldo_cliente,
+)
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 from .servico_capacity import (
     listar_colaboradores,
     atualizar_colaborador,
@@ -48,6 +58,86 @@ app.add_middleware(
 _cliente: Optional[ClienteApiJira] = None
 _servico: Optional[ServicoWorklogs] = None
 _gerador = GeradorRelatorios()
+_scheduler = AsyncIOScheduler(timezone="America/Sao_Paulo")
+
+
+async def _processar_fechamentos_pendentes():
+    """
+    Verifica quais meses passados ainda nao foram fechados e processa todos em ordem.
+    Um mes e considerado fechado se ja existe pelo menos uma entrada no saldo_msp.json
+    com aquele mes, OU se foi registrado no historico de fechamentos.
+    """
+    import asyncio as _asyncio
+    # Aguarda ate 30s para o servico estar disponivel (caso chamado logo apos startup)
+    for _ in range(30):
+        if _servico:
+            break
+        await _asyncio.sleep(1)
+    if not _servico:
+        logger.warning("[Saldo] Jira nao conectado apos 30s, fechamentos pendentes ignorados")
+        return
+
+    from calendar import monthrange
+    from .saldo_msp import _carregar_saldo, _salvar_saldo
+
+    hoje = date.today()
+    clientes = _carregar_clientes_msp()
+
+    # Determinar o mes de inicio: primeiro mes com clientes ativos cadastrados
+    # Usamos jan/2026 como ponto de partida (ajuste conforme necessario)
+    ano_inicio, mes_inicio = 2026, 1
+
+    # Coletar todos os meses ja fechados a partir do historico do saldo
+    saldo_atual = _carregar_saldo()
+    meses_fechados = set()
+    for entradas in saldo_atual.values():
+        for e in entradas:
+            meses_fechados.add(e["mes"])
+
+    # Tambem verificar arquivo de controle de fechamentos
+    _FECHAMENTOS_PATH = os.path.join(os.path.dirname(__file__), "..", "fechamentos_msp.json")
+    if os.path.exists(_FECHAMENTOS_PATH):
+        with open(_FECHAMENTOS_PATH, "r", encoding="utf-8-sig") as f:
+            import json as _json
+            meses_fechados.update(_json.load(f))
+
+    # Listar meses passados que precisam ser fechados (do inicio ate o mes anterior ao atual)
+    meses_pendentes = []
+    ano, mes = ano_inicio, mes_inicio
+    while (ano, mes) < (hoje.year, hoje.month):
+        mes_str = f"{ano}-{mes:02d}"
+        if mes_str not in meses_fechados:
+            meses_pendentes.append((ano, mes, mes_str))
+        if mes == 12:
+            ano, mes = ano + 1, 1
+        else:
+            mes += 1
+
+    if not meses_pendentes:
+        logger.info("[Saldo] Nenhum mes pendente de fechamento")
+        return
+
+    logger.info(f"[Saldo] {len(meses_pendentes)} mes(es) pendente(s): {[m[2] for m in meses_pendentes]}")
+
+    meses_processados = list(meses_fechados)
+    for ano_ref, mes_ref, mes_str in meses_pendentes:
+        ultimo_dia = monthrange(ano_ref, mes_ref)[1]
+        dt_inicio = datetime(ano_ref, mes_ref, 1, 0, 0, 0)
+        dt_fim = datetime(ano_ref, mes_ref, ultimo_dia, 23, 59, 59)
+        try:
+            worklogs = await _servico.coletar_worklogs(dt_inicio, dt_fim)
+            relatorio = _gerador.relatorio_por_cliente(worklogs, {})
+            horas_por_cliente = {r.cliente: r.total_horas for r in relatorio}
+            resultado = fechar_mes(mes_str, horas_por_cliente, clientes)
+            meses_processados.append(mes_str)
+            logger.info(f"[Saldo] Fechamento {mes_str} concluido: {len(resultado)} clientes processados")
+        except Exception as e:
+            logger.error(f"[Saldo] Erro ao fechar {mes_str}: {e}")
+
+    # Salvar historico de fechamentos
+    with open(_FECHAMENTOS_PATH, "w", encoding="utf-8") as f:
+        import json as _json
+        _json.dump(sorted(set(meses_processados)), f, ensure_ascii=False, indent=2)
 
 
 @app.on_event("startup")
@@ -65,10 +155,59 @@ async def startup():
             await _cliente.autenticar()
             _servico = ServicoWorklogs(_cliente)
             logger.info("Conectado ao Jira automaticamente via .env")
+            # Processar fechamentos pendentes em background
+            import asyncio
+            asyncio.create_task(_processar_fechamentos_pendentes())
         except Exception as e:
             logger.warning(f"Falha ao conectar via .env: {e}")
     else:
         logger.info("Credenciais .env nao encontradas, aguardando conexao manual")
+
+    # Agendar fechamento automatico no primeiro dia de cada mes as 00:05 BRT
+    async def _fechar_mes_automatico():
+        if not _servico:
+            logger.warning("[Scheduler] Jira nao conectado, fechamento automatico ignorado")
+            return
+        from calendar import monthrange
+        hoje = date.today()
+        if hoje.month == 1:
+            ano_ref, mes_ref = hoje.year - 1, 12
+        else:
+            ano_ref, mes_ref = hoje.year, hoje.month - 1
+        mes_str = f"{ano_ref}-{mes_ref:02d}"
+        ultimo_dia = monthrange(ano_ref, mes_ref)[1]
+        dt_inicio = datetime(ano_ref, mes_ref, 1, 0, 0, 0)
+        dt_fim = datetime(ano_ref, mes_ref, ultimo_dia, 23, 59, 59)
+        try:
+            worklogs = await _servico.coletar_worklogs(dt_inicio, dt_fim)
+            relatorio = _gerador.relatorio_por_cliente(worklogs, {})
+            horas_por_cliente = {r.cliente: r.total_horas for r in relatorio}
+            clientes = _carregar_clientes_msp()
+            resultado = fechar_mes(mes_str, horas_por_cliente, clientes)
+            # Registrar no historico
+            _FECHAMENTOS_PATH = os.path.join(os.path.dirname(__file__), "..", "fechamentos_msp.json")
+            fechamentos = []
+            if os.path.exists(_FECHAMENTOS_PATH):
+                with open(_FECHAMENTOS_PATH, "r", encoding="utf-8-sig") as f:
+                    import json as _json
+                    fechamentos = _json.load(f)
+            if mes_str not in fechamentos:
+                fechamentos.append(mes_str)
+            with open(_FECHAMENTOS_PATH, "w", encoding="utf-8") as f:
+                import json as _json
+                _json.dump(sorted(fechamentos), f, ensure_ascii=False, indent=2)
+            logger.info(f"[Scheduler] Fechamento automatico {mes_str} concluido: {len(resultado)} clientes")
+        except Exception as e:
+            logger.error(f"[Scheduler] Erro no fechamento automatico: {e}")
+
+    _scheduler.add_job(
+        _fechar_mes_automatico,
+        CronTrigger(day=1, hour=0, minute=5, timezone="America/Sao_Paulo"),
+        id="fechar_mes_msp",
+        replace_existing=True,
+    )
+    _scheduler.start()
+    logger.info("[Scheduler] Agendamento de fechamento mensal MSP ativo (dia 1 de cada mes, 00:05 BRT)")
 
 
 @app.get("/api/status")
@@ -83,6 +222,8 @@ async def conectar(config: ConfiguracaoJira):
         _cliente = ClienteApiJira(config)
         user_data = await _cliente.autenticar()
         _servico = ServicoWorklogs(_cliente)
+        import asyncio
+        asyncio.create_task(_processar_fechamentos_pendentes())
         return {"status": "conectado", "usuario": user_data}
     except JiraApiError as e:
         raise HTTPException(status_code=e.status_code or 500, detail=e.message)
@@ -244,6 +385,8 @@ async def tickets_aws(
     try:
         raw_issues = await servico.cliente.buscar_issues_projeto(
             project_key="AWS",
+            data_inicio=data_inicio,
+            data_fim=data_fim,
         )
     except JiraApiError as e:
         raise HTTPException(status_code=e.status_code or 500, detail=e.message)
@@ -305,7 +448,11 @@ class ClienteMSPUpdate(BaseModel):
 
 @app.get("/api/clientes-msp")
 async def get_clientes_msp():
-    return _carregar_clientes_msp()
+    data = _carregar_clientes_msp()
+    # Enriquecer com categoria
+    for nome, dados in data.items():
+        dados["categoria"] = get_categoria_cliente(dados.get("horas", 0))
+    return data
 
 
 @app.put("/api/clientes-msp/{nome}")
@@ -378,8 +525,58 @@ async def delete_perfil_capacity(perfil: str):
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
+# ===== Endpoints de Saldo MSP =====
+
+@app.get("/api/msp/saldo")
+async def get_saldo_msp():
+    """Retorna o saldo acumulado total por cliente."""
+    return get_saldo_todos()
+
+
+@app.get("/api/msp/saldo/detalhado")
+async def get_saldo_msp_detalhado():
+    """Retorna o saldo detalhado por mes de cada cliente."""
+    return get_saldo_detalhado()
+
+
+class FecharMesRequest(BaseModel):
+    mes: str  # formato "YYYY-MM"
+    horas_trabalhadas: dict[str, float]  # {nome_cliente: horas}
+
+
+@app.post("/api/msp/fechar-mes")
+async def post_fechar_mes(body: FecharMesRequest):
+    """
+    Fecha o mes informado calculando o saldo de cada cliente.
+    Aplica as regras de acumulo conforme o contrato.
+    """
+    clientes = _carregar_clientes_msp()
+    resultado = fechar_mes(body.mes, body.horas_trabalhadas, clientes)
+    return resultado
+
+
+class AjusteSaldoRequest(BaseModel):
+    horas: float
+    mes: str  # formato "YYYY-MM"
+    motivo: str = ""
+
+
+@app.post("/api/msp/saldo/{nome}/ajuste")
+async def post_ajuste_saldo(nome: str, body: AjusteSaldoRequest):
+    """Ajuste manual de saldo para um cliente (positivo = credito, negativo = debito)."""
+    return ajustar_saldo_manual(nome, body.horas, body.mes, body.motivo)
+
+
+@app.delete("/api/msp/saldo/{nome}")
+async def delete_saldo_cliente(nome: str):
+    """Zera o saldo acumulado de um cliente."""
+    return zerar_saldo_cliente(nome)
+
+
 @app.on_event("shutdown")
 async def shutdown():
+    if _scheduler.running:
+        _scheduler.shutdown(wait=False)
     if _cliente:
         await _cliente.close()
 

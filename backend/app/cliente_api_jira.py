@@ -130,9 +130,24 @@ class ClienteApiJira:
         self,
         project_key: str,
         max_results: int = 2000,
+        data_inicio=None,
+        data_fim=None,
     ) -> list:
-        """Busca todas as issues de um projeto via JQL com paginacao (nextPageToken)."""
-        jql = f"project = {project_key} ORDER BY updated DESC"
+        """Busca issues de um projeto via JQL com paginacao.
+        Se data_inicio/data_fim forem informados, filtra tickets criados OU
+        atualizados dentro do periodo (inclusive).
+        """
+        if data_inicio and data_fim:
+            inicio_str = data_inicio.strftime("%Y-%m-%d")
+            fim_str = data_fim.strftime("%Y-%m-%d")
+            jql = (
+                f"project = {project_key} AND "
+                f"(created >= \"{inicio_str}\" OR updated >= \"{inicio_str}\") AND "
+                f"(created <= \"{fim_str}\" OR updated <= \"{fim_str}\") "
+                f"ORDER BY updated DESC"
+            )
+        else:
+            jql = f"project = {project_key} ORDER BY updated DESC"
 
         issues = []
         page_size = 100
