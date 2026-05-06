@@ -958,11 +958,17 @@ export default function Dashboard({ onDesconectado, darkMode = false, onToggleDa
   };
   const TAB_HREF: Record<string, string> = {
     resumo: '#resumo', projetos: '#projetos', clientes: '#clientes',
-    tickets: '#tickets', capacity: '#capacity', configuracoes: '#configuracoes',
+    tickets: '#tickets', capacity: '#capacity',
+    'config-msp': '#config-msp',
+    'config-colaboradores': '#config-colaboradores',
+    'config-perfis': '#config-perfis',
   };
   const TAB_LABEL: Record<string, string> = {
     resumo: 'Resumo', projetos: 'Projetos', clientes: 'MSP',
-    tickets: 'Tickets', capacity: 'Capacity', configuracoes: 'Configurações',
+    tickets: 'Tickets', capacity: 'Capacity',
+    'config-msp': 'Clientes MSP',
+    'config-colaboradores': 'Colaboradores',
+    'config-perfis': 'Perfis de Horas',
   };
 
   const sideNav = (
@@ -974,18 +980,29 @@ export default function Dashboard({ onDesconectado, darkMode = false, onToggleDa
         const found = Object.entries(TAB_HREF).find(([, href]) => href === e.detail.href);
         if (found) {
           const nextTab = found[0];
-          if (tab === 'configuracoes' && nextTab !== 'configuracoes') { buscar(); buscarMspCapacity(); }
+          const wasConfig = tab.startsWith('config');
+          const goingToConfig = nextTab.startsWith('config');
+          if (wasConfig && !goingToConfig) { buscar(); buscarMspCapacity(); }
           setTab(nextTab);
         }
       }}
       items={[
-        { type: 'link', text: 'Resumo',          href: '#resumo' },
-        { type: 'link', text: 'Projetos',         href: '#projetos' },
-        { type: 'link', text: 'MSP',              href: '#clientes' },
-        { type: 'link', text: 'Tickets',          href: '#tickets' },
-        { type: 'link', text: 'Capacity',         href: '#capacity' },
+        { type: 'link', text: 'Resumo',   href: '#resumo' },
+        { type: 'link', text: 'Projetos', href: '#projetos' },
+        { type: 'link', text: 'MSP',      href: '#clientes' },
+        { type: 'link', text: 'Tickets',  href: '#tickets' },
+        { type: 'link', text: 'Capacity', href: '#capacity' },
         { type: 'divider' },
-        { type: 'link', text: 'Configurações', href: '#configuracoes' },
+        {
+          type: 'section',
+          text: 'Configurações',
+          defaultExpanded: tab.startsWith('config'),
+          items: [
+            { type: 'link', text: 'Clientes MSP',    href: '#config-msp' },
+            { type: 'link', text: 'Colaboradores',   href: '#config-colaboradores' },
+            { type: 'link', text: 'Perfis de Horas', href: '#config-perfis' },
+          ],
+        },
       ]}
     />
   );
@@ -1062,12 +1079,9 @@ export default function Dashboard({ onDesconectado, darkMode = false, onToggleDa
                   {tab === 'clientes' && renderClientes()}
                   {tab === 'tickets' && renderTickets()}
                   {tab === 'capacity' && <Capacity dataInicio={dataInicio} dataFim={dataFim} />}
-                  {tab === 'configuracoes' && (
-                    <SpaceBetween size="l">
-                      <ConfiguracoesMSP />
-                      <ConfiguracoesTime />
-                    </SpaceBetween>
-                  )}
+                  {tab === 'config-msp' && <ConfiguracoesMSP />}
+                  {tab === 'config-colaboradores' && <ConfiguracoesTime secao="colaboradores" />}
+                  {tab === 'config-perfis' && <ConfiguracoesTime secao="perfis" />}
                 </>
               )}
             </SpaceBetween>

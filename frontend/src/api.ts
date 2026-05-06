@@ -68,7 +68,8 @@ export async function getRelatorioCompleto(dataInicio: string, dataFim: string) 
 export interface ColaboradorConfig {
   perfil: string;
   time: string;
-  dias_ausentes?: number;
+  ausencias?: string[];
+  dias_ausentes?: number; // legado
 }
 
 export interface CapacityColaborador {
@@ -91,10 +92,10 @@ export async function getColaboradores() {
   return request<Record<string, ColaboradorConfig>>(API + '/colaboradores');
 }
 
-export async function updateColaborador(nome: string, perfil: string, time: string, dias_ausentes: number = 0) {
+export async function updateColaborador(nome: string, perfil: string, time: string, ausencias: string[] = []) {
   return request<ColaboradorConfig>(
     API + '/colaboradores/' + encodeURIComponent(nome),
-    { method: 'PUT', body: JSON.stringify({ perfil, time, dias_ausentes }) }
+    { method: 'PUT', body: JSON.stringify({ perfil, time, ausencias }) }
   );
 }
 

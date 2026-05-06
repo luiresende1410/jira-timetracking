@@ -28,14 +28,49 @@ def listar_colaboradores() -> dict:
     return _carregar_colaboradores()
 
 
-def atualizar_colaborador(nome: str, perfil: str, time: str, dias_ausentes: int = 0) -> dict:
+def _contar_ausencias_no_periodo(ausencias: list, inicio: date, fim: date) -> int:
+    """Conta quantos dias uteis das ausencias caem dentro do periodo inicio-fim."""
+    from datetime import datetime as _dt
+    dias_ausentes = 0
+    for entrada in ausencias:
+        entrada = str(entrada).strip()
+        if "/" in entrada:
+            # Range: "YYYY-MM-DD/YYYY-MM-DD"
+            partes = entrada.split("/")
+            try:
+                d_ini = _dt.strptime(partes[0].strip(), "%Y-%m-%d").date()
+                d_fim = _dt.strptime(partes[1].strip(), "%Y-%m-%d").date()
+            except ValueError:
+                continue
+            atual = max(d_ini, inicio)
+            fim_range = min(d_fim, fim)
+            while atual <= fim_range:
+                if atual.weekday() < 5:
+                    dias_ausentes += 1
+                atual += timedelta(days=1)
+        else:
+            # Dia unico: "YYYY-MM-DD"
+            try:
+                d = _dt.strptime(entrada, "%Y-%m-%d").date()
+            except ValueError:
+                continue
+            if inicio <= d <= fim and d.weekday() < 5:
+                dias_ausentes += 1
+    return dias_ausentes
+
+
+def atualizar_colaborador(nome: str, perfil: str, time: str, dias_ausentes: int = 0, ausencias: list | None = None) -> dict:
     data = _carregar_colaboradores()
-    # Preservar dias_ausentes existente se nao for passado explicitamente
     existente = data.get(nome, {})
+    # Se ausencias for passado explicitamente, usa; senao preserva o existente
+    if ausencias is not None:
+        ausencias_salvar = ausencias
+    else:
+        ausencias_salvar = existente.get("ausencias", [])
     data[nome] = {
         "perfil": perfil,
         "time": time,
-        "dias_ausentes": dias_ausentes if dias_ausentes > 0 else existente.get("dias_ausentes", 0),
+        "ausencias": ausencias_salvar,
     }
     _salvar_colaboradores(data)
     return data[nome]
@@ -134,7 +169,12 @@ def calcular_capacity(periodo_inicio: date, periodo_fim: date) -> dict:
         time = info.get("time", "A definir")
         categorias = perfis_capacity.get(perfil, perfil_efetivo_fallback)
 
-        dias_ausentes = info.get("dias_ausentes", 0)
+        ausencias = info.get("ausencias", [])
+        # Compatibilidade retroativa: se ainda tiver dias_ausentes numerico
+        if not ausencias and info.get("dias_ausentes", 0) > 0:
+            dias_ausentes = info.get("dias_ausentes", 0)
+        else:
+            dias_ausentes = _contar_ausencias_no_periodo(ausencias, periodo_inicio, periodo_fim)
         dias_efetivos = max(0, dias_uteis - dias_ausentes)
 
         capacity = {}
@@ -148,6 +188,7 @@ def calcular_capacity(periodo_inicio: date, periodo_fim: date) -> dict:
             "nome": nome,
             "perfil": perfil,
             "time": time,
+            "ausencias": ausencias,
             "dias_ausentes": dias_ausentes,
             "capacity": capacity,
             "total_provisionado": round(total_provisionado, 1),

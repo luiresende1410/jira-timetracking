@@ -342,7 +342,7 @@ async def relatorio_completo(
 class ColaboradorUpdate(BaseModel):
     perfil: str
     time: str
-    dias_ausentes: int = 0
+    ausencias: list[str] = []
 
 
 @app.get("/api/colaboradores")
@@ -352,7 +352,7 @@ async def get_colaboradores():
 
 @app.put("/api/colaboradores/{nome}")
 async def put_colaborador(nome: str, body: ColaboradorUpdate):
-    return atualizar_colaborador(nome, body.perfil, body.time, body.dias_ausentes)
+    return atualizar_colaborador(nome, body.perfil, body.time, ausencias=body.ausencias)
 
 
 @app.delete("/api/colaboradores/{nome}")
