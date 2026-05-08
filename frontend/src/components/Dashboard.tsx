@@ -23,6 +23,7 @@ import Alert from "@cloudscape-design/components/alert";
 import StatusIndicator from "@cloudscape-design/components/status-indicator";
 import Capacity from './Capacity';
 import ConfiguracoesMSP from './ConfiguracoesMSP';
+import ConfiguracoesProjetos from './ConfiguracoesProjetos';
 import ConfiguracoesTime from './ConfiguracoesTime';
 import Spinner from "@cloudscape-design/components/spinner";
 import AppLayout from "@cloudscape-design/components/app-layout";
@@ -100,12 +101,19 @@ export default function Dashboard({ onDesconectado, darkMode = false, onToggleDa
       return next;
     });
   };
-  const [dadosFinanceiros, setDadosFinanceiros] = useState<Record<string, { horasVendidas: number; valorHora: number }>>(() => {
+  const [dadosFinanceiros, setDadosFinanceiros] = useState<Record<string, { horasVendidas: number; valorHora: number; pm?: string }>>(() => {
     try { return JSON.parse(localStorage.getItem('dados_financeiros_projetos') || '{}'); } catch { return {}; }
   });
   const setFinanceiro = (key: string, campo: 'horasVendidas' | 'valorHora', val: number) => {
     setDadosFinanceiros(prev => {
       const next = { ...prev, [key]: { ...(prev[key] ?? { horasVendidas: 0, valorHora: 0 }), [campo]: val } };
+      localStorage.setItem('dados_financeiros_projetos', JSON.stringify(next));
+      return next;
+    });
+  };
+  const setFinanceiroPm = (key: string, pm: string) => {
+    setDadosFinanceiros(prev => {
+      const next = { ...prev, [key]: { ...(prev[key] ?? { horasVendidas: 0, valorHora: 0 }), pm } };
       localStorage.setItem('dados_financeiros_projetos', JSON.stringify(next));
       return next;
     });
@@ -357,7 +365,6 @@ export default function Dashboard({ onDesconectado, darkMode = false, onToggleDa
               <th style={{ width: 40, padding: "12px 8px" }} />
               <th style={{ textAlign: "left", padding: "12px 16px", fontSize: 14, color: "#545b64" }}>Projeto</th>
               <th style={{ textAlign: "left", padding: "12px 16px", fontSize: 14, color: "#545b64" }}>Key / %</th>
-              <th style={{ textAlign: 'center', padding: '12px 12px', fontSize: 13, color: '#545b64', width: 200 }}>Horas Vendidas / Valor hora</th>
               <th style={{ textAlign: "right", padding: "12px 16px", fontSize: 14, color: "#545b64" }}>Horas Trabalhadas</th>
               <th style={{ textAlign: 'center', padding: '12px 12px', fontSize: 13, color: '#545b64', width: 200 }}>Evolução</th>
               <th style={{ textAlign: 'right', padding: '12px 16px', fontSize: 13, color: '#545b64', width: 160 }}>Valor Agregado</th>
@@ -389,29 +396,6 @@ export default function Dashboard({ onDesconectado, darkMode = false, onToggleDa
                       {p.projeto_nome}
                     </td>
                     <td style={{ padding: "8px 16px", fontSize: 12, color: "#5f6b7a" }}>{p.projeto_key}</td>
-                    {/* Horas Vendidas / Valor hora */}
-                    <td style={{ padding: '8px 12px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <input type="number" min={0}
-                            value={dadosFinanceiros[p.projeto_key]?.horasVendidas ?? ''}
-                            onChange={e => setFinanceiro(p.projeto_key, 'horasVendidas', Math.max(0, Number(e.target.value)))}
-                            placeholder="Horas"
-                            style={{ width: 70, padding: '3px 6px', fontSize: 12, textAlign: 'right', border: '1px solid #aab7b8', borderRadius: 4, outline: 'none', background: '#fff', color: '#16191f' }}
-                          />
-                          <span style={{ fontSize: 11, color: '#879596' }}>h</span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <span style={{ fontSize: 11, color: '#879596' }}>R$</span>
-                          <input type="number" min={0}
-                            value={dadosFinanceiros[p.projeto_key]?.valorHora ?? ''}
-                            onChange={e => setFinanceiro(p.projeto_key, 'valorHora', Math.max(0, Number(e.target.value)))}
-                            placeholder="Valor/h"
-                            style={{ width: 70, padding: '3px 6px', fontSize: 12, textAlign: 'right', border: '1px solid #aab7b8', borderRadius: 4, outline: 'none', background: '#fff', color: '#16191f' }}
-                          />
-                        </div>
-                      </div>
-                    </td>
                     {/* Horas Trabalhadas */}
                     <td style={{ padding: '8px 16px', fontSize: 13, textAlign: 'right', fontWeight: 600, color: '#16191f' }}>
                       {p.total_horas.toFixed(1)}h
@@ -436,7 +420,7 @@ export default function Dashboard({ onDesconectado, darkMode = false, onToggleDa
                       </div>
                     </td>
                     {/* Valor Agregado */}
-                    <td style={{ padding: '8px 16px', textAlign: 'right' }} onClick={e => e.stopPropagation()}>
+                    <td style={{ padding: '8px 16px', textAlign: 'right' }}>
                       {(() => {
                         const ev = evolucaoProjetos[p.projeto_key] ?? 0;
                         const hv = dadosFinanceiros[p.projeto_key]?.horasVendidas ?? 0;
@@ -456,11 +440,12 @@ export default function Dashboard({ onDesconectado, darkMode = false, onToggleDa
                         );
                       })()}
                     </td>
+
                   </tr>
                   {/* Painel expandido: atividades por colaborador */}
                   {isExpanded && (
                     <tr key={`${p.projeto_key}-expand`} style={{ borderBottom: '2px solid #e9ebed' }}>
-                      <td colSpan={7} style={{ padding: 0, background: '#f8f9fa' }}>
+                      <td colSpan={5} style={{ padding: 0, background: '#f8f9fa' }}>
                         <div style={{ padding: '16px 24px 20px 48px' }}>
                           {colabsComAtividades.length === 0 ? (
                             <Box color="text-status-inactive" fontSize="body-s">Nenhuma atividade encontrada para este projeto.</Box>
@@ -962,6 +947,7 @@ export default function Dashboard({ onDesconectado, darkMode = false, onToggleDa
     'config-msp': '#config-msp',
     'config-colaboradores': '#config-colaboradores',
     'config-perfis': '#config-perfis',
+    'config-projetos': '#config-projetos',
   };
   const TAB_LABEL: Record<string, string> = {
     resumo: 'Resumo', projetos: 'Projetos', clientes: 'MSP',
@@ -969,6 +955,7 @@ export default function Dashboard({ onDesconectado, darkMode = false, onToggleDa
     'config-msp': 'Clientes MSP',
     'config-colaboradores': 'Colaboradores',
     'config-perfis': 'Perfis de Horas',
+    'config-projetos': 'Projetos',
   };
 
   const sideNav = (
@@ -1001,6 +988,7 @@ export default function Dashboard({ onDesconectado, darkMode = false, onToggleDa
             { type: 'link', text: 'Clientes MSP',    href: '#config-msp' },
             { type: 'link', text: 'Colaboradores',   href: '#config-colaboradores' },
             { type: 'link', text: 'Perfis de Horas', href: '#config-perfis' },
+            { type: 'link', text: 'Projetos',       href: '#config-projetos' },
           ],
         },
       ]}
@@ -1082,6 +1070,7 @@ export default function Dashboard({ onDesconectado, darkMode = false, onToggleDa
                   {tab === 'config-msp' && <ConfiguracoesMSP />}
                   {tab === 'config-colaboradores' && <ConfiguracoesTime secao="colaboradores" />}
                   {tab === 'config-perfis' && <ConfiguracoesTime secao="perfis" />}
+                  {tab === 'config-projetos' && <ConfiguracoesProjetos projetos={projetosFiltrados.map(p => ({ projeto_key: p.projeto_key, projeto_nome: p.projeto_nome }))} dados={dadosFinanceiros} evolucao={evolucaoProjetos} onChange={setFinanceiro} onChangePm={setFinanceiroPm} />}
                 </>
               )}
             </SpaceBetween>
